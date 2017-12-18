@@ -1,5 +1,5 @@
 config.json
-.js
+*.js
 package-lock.json
 tsconfig.json
 *.mp3
