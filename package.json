@@ -1,0 +1,18 @@
+{
+  "name": "phone",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/ws": "^3.2.1",
+    "chalk": "^2.3.0",
+    "eris": "^0.8.2",
+    "opusscript": "0.0.6",
+    "ws": "^3.3.2"
+  }
+}

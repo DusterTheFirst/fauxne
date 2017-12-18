@@ -1,0 +1,7 @@
+config.json
+.js
+package-lock.json
+tsconfig.json
+*.mp3
+node_modules/
+.DS_Store
