@@ -1,4 +1,4 @@
-Ever wanted to connect a rotary phone to discord?
+Ever wanted to connect an old POTS Phone to discord?
 
 no?
 
