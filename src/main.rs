@@ -4,9 +4,9 @@ extern crate log;
 use dotenv::dotenv;
 use simplelog::{LevelFilter, SimpleLogger, TermLogger, TerminalMode, ConfigBuilder};
 use std::env;
-use voice_client::VoiceClient;
+use voice::client::VoiceClient;
 
-mod voice_client;
+mod voice;
 
 #[async_std::main]
 async fn main() {
@@ -35,5 +35,4 @@ async fn main() {
         .login(&env::var("TOKEN").expect("TOKEN env var missing"))
         .await
         .unwrap();
-    info!("Logged into the discord gateway");
 }
