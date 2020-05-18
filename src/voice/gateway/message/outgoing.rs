@@ -42,7 +42,7 @@ pub enum OutgoingGatewayData {
         properties: IdentifyProperties,
         intents: u16,
     },
-    Heartbeat(u64),
+    Heartbeat(Option<u64>),
     HeartbeatAck,
 }
 

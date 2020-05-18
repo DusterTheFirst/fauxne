@@ -13,7 +13,7 @@ async fn main() {
     dotenv().ok();
 
     let log_level = if cfg!(debug_assertions) {
-        /* LevelFilter::Trace */ LevelFilter::Debug
+        LevelFilter::Trace /* LevelFilter::Debug */
     } else {
         LevelFilter::Info
     };
@@ -28,7 +28,7 @@ async fn main() {
         SimpleLogger::init(log_level, config).expect("No logger should be already set");
     };
 
-    let mut client = VoiceClient::connect().await.unwrap();
+    let client = VoiceClient::connect().await.unwrap();
     info!("Connected to discord gateway");
 
     client

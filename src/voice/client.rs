@@ -4,8 +4,7 @@ use super::gateway::{
     message::outgoing::{IdentifyProperties, OutgoingGatewayData, OutgoingGatewayMessage},
 };
 use async_native_tls::TlsStream;
-use async_std::net::TcpStream;
-use async_std::task;
+use async_std::{net::TcpStream, sync::RwLock, task};
 use async_tungstenite::{
     async_std::connect_async,
     stream::Stream,
@@ -13,7 +12,11 @@ use async_tungstenite::{
     WebSocketStream,
 };
 use futures::prelude::*;
-use std::time::Duration;
+use std::{
+    sync::atomic::{AtomicU64, Ordering},
+    sync::Arc,
+    time::Duration,
+};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -27,7 +30,7 @@ pub enum Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 pub struct VoiceClient {
-    stream: WebSocketStream<Stream<TcpStream, TlsStream<TcpStream>>>,
+    stream: Arc<RwLock<WebSocketStream<Stream<TcpStream, TlsStream<TcpStream>>>>>,
 }
 
 impl VoiceClient {
@@ -36,10 +39,12 @@ impl VoiceClient {
     pub async fn connect() -> Result<Self> {
         let (stream, _) = connect_async(Self::GATEWAY).await?;
 
-        Ok(VoiceClient { stream })
+        Ok(VoiceClient {
+            stream: Arc::new(RwLock::new(stream)),
+        })
     }
 
-    pub async fn login(&mut self, token: &str) -> Result<()> {
+    pub async fn login(mut self, token: &str) -> Result<()> {
         self.send_gateway_message(
             OutgoingGatewayData::Identify {
                 token: token.into(),
@@ -54,7 +59,7 @@ impl VoiceClient {
                         "unknown"
                     }
                     .into(),
-                    browser: env!("CARGO_PKG_NAME").into(),
+                    browser: "Discord iOS".into(), /* wnv!("CARGO_PKG_NAME").into() */
                     device: env!("CARGO_PKG_NAME").into(),
                 },
                 intents: intents::DIRECT_MESSAGES,
@@ -63,14 +68,34 @@ impl VoiceClient {
         )
         .await?;
 
-        while let Some(Ok(response)) = self.stream.next().await {
-            match response {
+        let last_seq = Arc::new(AtomicU64::new(0));
+
+        let arc_self = Arc::new(RwLock::new(self));
+
+        loop {
+            let stream = arc_self.read().await.stream.clone();
+            let next = stream.write().await.next().await;
+            let message = match next {
+                Some(Ok(m)) => m.clone(),
+                Some(Err(e)) => {
+                    error!("Encountered error reading gateway stream.");
+
+                    return Err(e.into());
+                }
+                None => break,
+            };
+
+            match message {
                 Message::Text(json) => {
                     trace!("Recieved: {:?}", json);
 
                     match IncomingGatewayMessage::from_json(&json) {
                         Ok(incoming) => {
-                            debug!("Seq: {:?}", incoming.seq);
+                            debug!("Seq: {:?} {:?}", last_seq, incoming.seq);
+
+                            if let Some(seq) = incoming.seq {
+                                last_seq.store(seq, Ordering::Release);
+                            }
 
                             match incoming.data {
                                 IncomingGatewayData::Hello(hello) => {
@@ -79,13 +104,37 @@ impl VoiceClient {
                                         hello.heartbeat_interval
                                     );
 
+                                    let seq_id = last_seq.clone();
+                                    let arc_self = arc_self.clone();
+
                                     task::spawn(async move {
                                         loop {
                                             task::sleep(Duration::from_millis(
                                                 hello.heartbeat_interval,
                                             ))
                                             .await;
-                                            debug!("Sending heartbeat")
+
+                                            let seq_id = seq_id.load(Ordering::Acquire);
+
+                                            debug!("Sending heartbeat with seq {:?}", seq_id);
+
+                                            if let Err(e) = arc_self
+                                                .write()
+                                                .await
+                                                .send_gateway_message(
+                                                    OutgoingGatewayData::Heartbeat(
+                                                        if seq_id == 0 {
+                                                            None
+                                                        } else {
+                                                            Some(seq_id)
+                                                        },
+                                                    )
+                                                    .into(),
+                                                )
+                                                .await
+                                            {
+                                                error!("Failed to send heartbeat: {:?}", e);
+                                            };
                                         }
                                     });
                                 }
@@ -99,8 +148,8 @@ impl VoiceClient {
                                 IncomingGatewayData::HeartbeatAck => {
                                     trace!("Server sent Heartbeat ACK")
                                 }
-                                IncomingGatewayData::Unknown(v) => {
-                                    warn!("Server sent unknown data: {:?}", v)
+                                IncomingGatewayData::Unknown(_) => {
+                                    warn!("Server sent unknown data: {:?}", incoming)
                                 }
                             }
                         }
@@ -136,7 +185,11 @@ impl VoiceClient {
 
         trace!("Sending JSON: {}", &content);
 
-        self.stream.send(Message::Text(content)).await?;
+        self.stream
+            .write()
+            .await
+            .send(Message::Text(content))
+            .await?;
 
         Ok(())
     }
