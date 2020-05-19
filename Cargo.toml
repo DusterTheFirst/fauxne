@@ -7,7 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-async-std = { version = "1.5.0", features = ["attributes"] }
+async-std = { version = "1.5.0", features = ["attributes", "unstable"] }
 async-tungstenite = { version = "0.4.2", features = ["async-std-runtime", "async-native-tls"] }
 async-native-tls  = "0.3.3"
 serde = { version = "1.0.110", features = ["derive"] }
@@ -16,4 +16,5 @@ futures = "0.3.5"
 dotenv = "0.15.0"
 thiserror = "1.0.18"
 log = "0.4.8"
-simplelog = "0.7.6"
+simplelog = "0.8.0"
+ctrlc = "3.1.4"

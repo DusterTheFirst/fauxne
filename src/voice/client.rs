@@ -4,11 +4,15 @@ use super::gateway::{
     message::outgoing::{IdentifyProperties, OutgoingGatewayData, OutgoingGatewayMessage},
 };
 use async_native_tls::TlsStream;
-use async_std::{net::TcpStream, sync::RwLock, task};
+use async_std::{net::TcpStream, sync::Mutex, task};
 use async_tungstenite::{
     async_std::connect_async,
     stream::Stream,
-    tungstenite::{self, Message},
+    tungstenite::{
+        self,
+        protocol::{frame::coding::CloseCode, CloseFrame},
+        Message,
+    },
     WebSocketStream,
 };
 use futures::prelude::*;
@@ -17,6 +21,7 @@ use std::{
     sync::Arc,
     time::Duration,
 };
+use stream::{SplitSink, SplitStream};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -29,22 +34,39 @@ pub enum Error {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+type GatewayTX = SplitSink<GatewayStream, Message>;
+type GatewayRX = SplitStream<GatewayStream>;
+type GatewayStream = WebSocketStream<Stream<TcpStream, TlsStream<TcpStream>>>;
+
 pub struct VoiceClient {
-    stream: Arc<RwLock<WebSocketStream<Stream<TcpStream, TlsStream<TcpStream>>>>>,
+    tx: Mutex<GatewayTX>,
+    rx: Mutex<GatewayRX>,
 }
 
 impl VoiceClient {
     const GATEWAY: &'static str = "wss://gateway.discord.gg/?v=6&encoding=json";
 
-    pub async fn connect() -> Result<Self> {
+    pub async fn connect() -> Result<Arc<Self>> {
         let (stream, _) = connect_async(Self::GATEWAY).await?;
 
-        Ok(VoiceClient {
-            stream: Arc::new(RwLock::new(stream)),
-        })
+        let (tx, rx) = stream.split();
+
+        Ok(Arc::new(VoiceClient {
+            tx: Mutex::new(tx),
+            rx: Mutex::new(rx),
+        }))
     }
 
-    pub async fn login(mut self, token: &str) -> Result<()> {
+    pub async fn disconnect(self: Arc<Self>) -> Result<()> {
+        self.tx.lock().await.send(Message::Close(Some(CloseFrame {
+            code: CloseCode::Normal,
+            reason: "".into()
+        }))).await?;
+
+        Ok(())
+    }
+
+    pub async fn login(self: Arc<Self>, token: &str) -> Result<()> {
         self.send_gateway_message(
             OutgoingGatewayData::Identify {
                 token: token.into(),
@@ -59,7 +81,7 @@ impl VoiceClient {
                         "unknown"
                     }
                     .into(),
-                    browser: "Discord iOS".into(), /* wnv!("CARGO_PKG_NAME").into() */
+                    browser: "Discord iOS".into(),
                     device: env!("CARGO_PKG_NAME").into(),
                 },
                 intents: intents::DIRECT_MESSAGES,
@@ -70,11 +92,9 @@ impl VoiceClient {
 
         let last_seq = Arc::new(AtomicU64::new(0));
 
-        let arc_self = Arc::new(RwLock::new(self));
-
         loop {
-            let stream = arc_self.read().await.stream.clone();
-            let next = stream.write().await.next().await;
+            let mut stream = self.rx.lock().await;
+            let next = stream.next().await;
             let message = match next {
                 Some(Ok(m)) => m.clone(),
                 Some(Err(e)) => {
@@ -91,8 +111,6 @@ impl VoiceClient {
 
                     match IncomingGatewayMessage::from_json(&json) {
                         Ok(incoming) => {
-                            debug!("Seq: {:?} {:?}", last_seq, incoming.seq);
-
                             if let Some(seq) = incoming.seq {
                                 last_seq.store(seq, Ordering::Release);
                             }
@@ -105,7 +123,8 @@ impl VoiceClient {
                                     );
 
                                     let seq_id = last_seq.clone();
-                                    let arc_self = arc_self.clone();
+
+                                    let heartbeat_self = self.clone();
 
                                     task::spawn(async move {
                                         loop {
@@ -118,20 +137,15 @@ impl VoiceClient {
 
                                             debug!("Sending heartbeat with seq {:?}", seq_id);
 
-                                            if let Err(e) = arc_self
-                                                .write()
-                                                .await
-                                                .send_gateway_message(
-                                                    OutgoingGatewayData::Heartbeat(
-                                                        if seq_id == 0 {
-                                                            None
-                                                        } else {
-                                                            Some(seq_id)
-                                                        },
-                                                    )
-                                                    .into(),
-                                                )
-                                                .await
+                                            if let Err(e) = heartbeat_self.send_gateway_message(
+                                                OutgoingGatewayData::Heartbeat(if seq_id == 0 {
+                                                    None
+                                                } else {
+                                                    Some(seq_id)
+                                                })
+                                                .into(),
+                                            )
+                                            .await
                                             {
                                                 error!("Failed to send heartbeat: {:?}", e);
                                             };
@@ -146,10 +160,10 @@ impl VoiceClient {
                                     todo!();
                                 }
                                 IncomingGatewayData::HeartbeatAck => {
-                                    trace!("Server sent Heartbeat ACK")
+                                    trace!("Server sent Heartbeat ACK");
                                 }
                                 IncomingGatewayData::Unknown(_) => {
-                                    warn!("Server sent unknown data: {:?}", incoming)
+                                    warn!("Server sent unknown data: {:?}", incoming);
                                 }
                             }
                         }
@@ -174,7 +188,7 @@ impl VoiceClient {
         Ok(())
     }
 
-    async fn send_gateway_message(&mut self, message: OutgoingGatewayMessage) -> Result<()> {
+    async fn send_gateway_message(self: &Arc<Self>, message: OutgoingGatewayMessage) -> Result<()> {
         debug!("Sending: {:#?}", &message);
 
         let content = if cfg!(debug_assertions) {
@@ -185,11 +199,7 @@ impl VoiceClient {
 
         trace!("Sending JSON: {}", &content);
 
-        self.stream
-            .write()
-            .await
-            .send(Message::Text(content))
-            .await?;
+        self.tx.lock().await.send(Message::Text(content)).await?;
 
         Ok(())
     }

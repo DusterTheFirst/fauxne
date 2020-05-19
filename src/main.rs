@@ -1,8 +1,9 @@
 #[macro_use]
 extern crate log;
 
+use async_std::task;
 use dotenv::dotenv;
-use simplelog::{LevelFilter, SimpleLogger, TermLogger, TerminalMode, ConfigBuilder};
+use simplelog::{ConfigBuilder, LevelFilter, SimpleLogger, TermLogger, TerminalMode};
 use std::env;
 use voice::client::VoiceClient;
 
@@ -13,7 +14,8 @@ async fn main() {
     dotenv().ok();
 
     let log_level = if cfg!(debug_assertions) {
-        LevelFilter::Trace /* LevelFilter::Debug */
+        /* LevelFilter::Trace */
+        LevelFilter::Debug
     } else {
         LevelFilter::Info
     };
@@ -30,6 +32,17 @@ async fn main() {
 
     let client = VoiceClient::connect().await.unwrap();
     info!("Connected to discord gateway");
+
+    let handler_client = client.clone();
+    ctrlc::set_handler(move || {
+        let handler_client = handler_client.clone();
+
+        warn!("Closing connection");
+
+        task::spawn(async move {
+            handler_client.disconnect().await.unwrap();
+        });
+    }).expect("Failed to set Ctrl+C handler");
 
     client
         .login(&env::var("TOKEN").expect("TOKEN env var missing"))
