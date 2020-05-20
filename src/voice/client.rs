@@ -1,6 +1,6 @@
 use super::gateway::{
-    intents,
-    message::incoming::{IncomingGatewayData, IncomingGatewayMessage},
+    intents::Intent,
+    message::incoming::{IncomingGatewayData, IncomingGatewayMessage, Event},
     message::outgoing::{IdentifyProperties, OutgoingGatewayData, OutgoingGatewayMessage},
 };
 use async_native_tls::TlsStream;
@@ -17,7 +17,7 @@ use async_tungstenite::{
 };
 use futures::prelude::*;
 use std::{
-    sync::atomic::{AtomicU64, Ordering},
+    sync::atomic::{AtomicBool, AtomicU64, Ordering},
     sync::Arc,
     time::Duration,
 };
@@ -41,6 +41,8 @@ type GatewayStream = WebSocketStream<Stream<TcpStream, TlsStream<TcpStream>>>;
 pub struct VoiceClient {
     tx: Mutex<GatewayTX>,
     rx: Mutex<GatewayRX>,
+    last_seq: AtomicU64,
+    heartbeating: AtomicBool,
 }
 
 impl VoiceClient {
@@ -54,19 +56,26 @@ impl VoiceClient {
         Ok(Arc::new(VoiceClient {
             tx: Mutex::new(tx),
             rx: Mutex::new(rx),
+            last_seq: AtomicU64::new(0),
+            heartbeating: AtomicBool::new(false),
         }))
     }
 
     pub async fn disconnect(self: Arc<Self>) -> Result<()> {
-        self.tx.lock().await.send(Message::Close(Some(CloseFrame {
-            code: CloseCode::Normal,
-            reason: "".into()
-        }))).await?;
+        self.tx
+            .lock()
+            .await
+            .send(Message::Close(Some(CloseFrame {
+                code: CloseCode::Normal,
+                reason: "".into(),
+            })))
+            .await?;
 
         Ok(())
     }
 
     pub async fn login(self: Arc<Self>, token: &str) -> Result<()> {
+        // self.clone().identify(token).await?;
         self.send_gateway_message(
             OutgoingGatewayData::Identify {
                 token: token.into(),
@@ -84,13 +93,11 @@ impl VoiceClient {
                     browser: "Discord iOS".into(),
                     device: env!("CARGO_PKG_NAME").into(),
                 },
-                intents: intents::DIRECT_MESSAGES,
+                intents: Intent::DIRECT_MESSAGES,
             }
             .into(),
         )
         .await?;
-
-        let last_seq = Arc::new(AtomicU64::new(0));
 
         loop {
             let mut stream = self.rx.lock().await;
@@ -112,59 +119,14 @@ impl VoiceClient {
                     match IncomingGatewayMessage::from_json(&json) {
                         Ok(incoming) => {
                             if let Some(seq) = incoming.seq {
-                                last_seq.store(seq, Ordering::Release);
+                                self.last_seq.store(seq.into(), Ordering::Release);
                             }
 
-                            match incoming.data {
-                                IncomingGatewayData::Hello(hello) => {
-                                    debug!(
-                                        "Starting heartbeating with an interval of {}ms",
-                                        hello.heartbeat_interval
-                                    );
-
-                                    let seq_id = last_seq.clone();
-
-                                    let heartbeat_self = self.clone();
-
-                                    task::spawn(async move {
-                                        loop {
-                                            task::sleep(Duration::from_millis(
-                                                hello.heartbeat_interval,
-                                            ))
-                                            .await;
-
-                                            let seq_id = seq_id.load(Ordering::Acquire);
-
-                                            debug!("Sending heartbeat with seq {:?}", seq_id);
-
-                                            if let Err(e) = heartbeat_self.send_gateway_message(
-                                                OutgoingGatewayData::Heartbeat(if seq_id == 0 {
-                                                    None
-                                                } else {
-                                                    Some(seq_id)
-                                                })
-                                                .into(),
-                                            )
-                                            .await
-                                            {
-                                                error!("Failed to send heartbeat: {:?}", e);
-                                            };
-                                        }
-                                    });
-                                }
-                                IncomingGatewayData::Heartbeat(nonce) => {
-                                    trace!(
-                                        "Server sent Heartbeat, responding with nonce: {}",
-                                        nonce
-                                    );
-                                    todo!();
-                                }
-                                IncomingGatewayData::HeartbeatAck => {
-                                    trace!("Server sent Heartbeat ACK");
-                                }
-                                IncomingGatewayData::Unknown(_) => {
-                                    warn!("Server sent unknown data: {:?}", incoming);
-                                }
+                            if let Err(e) = self.clone().handle_message(incoming).await {
+                                error!(
+                                    "VoiceClient encountered an error handling a message: {:?}",
+                                    e
+                                );
                             }
                         }
                         Err(e) => error!("Failed to parse incoming json: {:?}\n{:?}", e, json),
@@ -184,6 +146,109 @@ impl VoiceClient {
                 }
             }
         }
+
+        Ok(())
+    }
+
+    async fn handle_message(self: Arc<Self>, message: IncomingGatewayMessage) -> Result<()> {
+        match message.data {
+            IncomingGatewayData::Hello(hello) => {
+                if self.heartbeating.load(Ordering::Relaxed) {
+                    warn!("Server sent multiple hello packets, ignoring: {:?} ", hello);
+                }
+                debug!(
+                    "Starting heartbeating with an interval of {}ms",
+                    hello.heartbeat_interval
+                );
+
+                self.heartbeating.store(true, Ordering::Relaxed);
+                self.clone().run_heartbeat(hello.heartbeat_interval);
+            }
+            IncomingGatewayData::Heartbeat(seq) => {
+                trace!("Server sent Heartbeat({:?}), responding", seq);
+                self.send_gateway_message(OutgoingGatewayData::HeartbeatAck.into())
+                    .await?;
+            }
+            IncomingGatewayData::HeartbeatAck => {
+                trace!("Server sent Heartbeat ACK");
+            }
+            IncomingGatewayData::Dispatch(event) => {
+                match event {
+                    Event::Ready(data) => {
+                        info!("Gateway Ready!");
+                    }
+                    Event::Unknown(event, data) => warn!(
+                        "Server dispatched an unknown event: \"{}\"\n{}",
+                        event,
+                        serde_json::to_string_pretty(&data)?
+                    ),
+                }
+            }
+            IncomingGatewayData::InvalidSession(resumable) => {
+                warn!("Invalid session, Resumable: {}", resumable);
+                todo!();
+            }
+            IncomingGatewayData::Reconnect => {
+                warn!("Gateway sent reconnect event");
+                todo!();
+            }
+            IncomingGatewayData::Unknown(_) => {
+                warn!("Server sent unknown data: {:?}", message);
+            }
+        }
+
+        Ok(())
+    }
+
+    fn run_heartbeat(self: Arc<Self>, interval: u64) {
+        task::spawn(async move {
+            loop {
+                task::sleep(Duration::from_millis(interval)).await;
+
+                let seq_id = self.last_seq.load(Ordering::Acquire);
+
+                debug!("Sending heartbeat with seq {:?}", seq_id);
+
+                if let Err(e) = self
+                    .send_gateway_message(
+                        OutgoingGatewayData::Heartbeat(if seq_id == 0 {
+                            None
+                        } else {
+                            Some(seq_id)
+                        })
+                        .into(),
+                    )
+                    .await
+                {
+                    error!("Failed to send heartbeat: {:?}", e);
+                };
+            }
+        });
+    }
+
+    async fn identify(self: Arc<Self>, token: &str) -> Result<()> {
+        self.send_gateway_message(
+            OutgoingGatewayData::Identify {
+                token: token.into(),
+                properties: IdentifyProperties {
+                    os: if cfg!(target_os = "macos") {
+                        "macos"
+                    } else if cfg!(target_os = "windows") {
+                        "windows"
+                    } else if cfg!(target_os = "linux") {
+                        "linux"
+                    } else {
+                        "unknown"
+                    }
+                    .into(),
+                    browser: "Discord iOS".into(),
+                    device: env!("CARGO_PKG_NAME").into(),
+                },
+                intents: Intent::DIRECT_MESSAGES,
+            }
+            .into(),
+        )
+        .await?;
 
         Ok(())
     }

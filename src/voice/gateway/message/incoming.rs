@@ -1,3 +1,4 @@
+use super::model::{id::SequenceID, user::User};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -11,7 +12,7 @@ struct UnparsedIncomingGatewayMessage {
     #[serde(rename = "t")]
     pub name: Option<String>,
     #[serde(rename = "s")]
-    pub seq: Option<u64>,
+    pub seq: Option<SequenceID>,
 }
 
 #[derive(Debug)]
@@ -20,36 +21,73 @@ pub struct IncomingGatewayMessage {
     opcode: u8,
     pub data: IncomingGatewayData,
     pub name: Option<String>,
-    pub seq: Option<u64>,
+    pub seq: Option<SequenceID>,
 }
 
 impl IncomingGatewayMessage {
     pub fn from_json(json: &str) -> serde_json::Result<IncomingGatewayMessage> {
-        let unparsed: UnparsedIncomingGatewayMessage = serde_json::from_str(&json)?;
+        let UnparsedIncomingGatewayMessage {
+            data,
+            name,
+            opcode,
+            seq,
+        } = serde_json::from_str(&json)?;
 
         Ok(IncomingGatewayMessage {
-            opcode: unparsed.opcode,
-            name: unparsed.name,
-            seq: unparsed.seq,
-            data: match unparsed.opcode {
-                1 => IncomingGatewayData::Heartbeat(serde_json::from_value(unparsed.data)?),
-                10 => IncomingGatewayData::Hello(serde_json::from_value(unparsed.data)?),
+            opcode,
+            seq,
+            data: match opcode {
+                0 => match &name {
+                    Some(event) => {
+                        IncomingGatewayData::Dispatch(Event::from_event_value(event, data))
+                    }
+                    None => IncomingGatewayData::Unknown(data),
+                },
+                1 => IncomingGatewayData::Heartbeat(serde_json::from_value(data)?),
+                7 => IncomingGatewayData::Reconnect,
+                9 => IncomingGatewayData::InvalidSession(serde_json::from_value(data)?),
+                10 => IncomingGatewayData::Hello(serde_json::from_value(data)?),
                 11 => IncomingGatewayData::HeartbeatAck,
-                _ => IncomingGatewayData::Unknown(unparsed.data),
+                _ => IncomingGatewayData::Unknown(data),
             },
+            name,
         })
     }
 }
 
 #[derive(Debug)]
 pub enum IncomingGatewayData {
-    Hello(HelloGatewayData),
-    Heartbeat(u64),
+    Dispatch(Event),
+    Heartbeat(SequenceID),
     HeartbeatAck,
+    Hello(HelloGatewayData),
+    InvalidSession(bool),
+    Reconnect,
     Unknown(Value),
 }
 
 #[derive(Debug, Deserialize)]
 pub struct HelloGatewayData {
     pub heartbeat_interval: u64,
+}
+
+#[derive(Debug)]
+pub enum Event {
+    Unknown(String, Value),
+    Ready(GatewayReady),
+}
+
+impl Event {
+    fn from_event_value(event: &str, value: Value) -> Self {
+        match event {
+            // "READY" => Event::Ready("".into()),
+            _ => Event::Unknown(event.into(), value),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GatewayReady {
+    user: User,
+    session_id: String,
 }

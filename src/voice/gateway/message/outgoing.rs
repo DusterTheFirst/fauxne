@@ -1,3 +1,10 @@
+use super::{
+    super::intents::Intent,
+    model::{
+        activity::{Activity, Status},
+        id::{ChannelId, GuildID, SequenceID},
+    },
+};
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
@@ -26,6 +33,9 @@ impl From<OutgoingGatewayData> for OutgoingGatewayMessage {
             opcode: match &data {
                 OutgoingGatewayData::Heartbeat(_) => 1,
                 OutgoingGatewayData::Identify { .. } => 2,
+                OutgoingGatewayData::PresenceUpdate { .. } => 3,
+                OutgoingGatewayData::VoiceStateUpdate { .. } => 4,
+                OutgoingGatewayData::Resume { .. } => 6,
                 OutgoingGatewayData::HeartbeatAck => 11,
             },
             data,
@@ -37,13 +47,34 @@ impl From<OutgoingGatewayData> for OutgoingGatewayMessage {
 #[serde(untagged)]
 /// Data that will be sent to the gateway
 pub enum OutgoingGatewayData {
-    Identify {
-        token: String,
-        properties: IdentifyProperties,
-        intents: u16,
-    },
     Heartbeat(Option<u64>),
     HeartbeatAck,
+    Identify {
+        intents: Intent,
+        properties: IdentifyProperties,
+        token: String,
+    },
+    PresenceUpdate {
+        /// Unix time (in milliseconds) of when the client went idle, or `None` if the client is not idle
+        since: Option<u64>,
+        /// `None`, or the user's new activity
+        game: Option<Activity>,
+        /// The user's new [Status]
+        status: Status,
+        /// Whether or not the client is afk
+        afk: bool,
+    },
+    Resume {
+        token: String,
+        session_id: String,
+        seq: SequenceID,
+    },
+    VoiceStateUpdate {
+        guild_id: Option<GuildID>,
+        channel_id: Option<ChannelId>,
+        self_mute: bool,
+        self_deaf: bool,
+    },
 }
 
 #[derive(Debug, Serialize)]

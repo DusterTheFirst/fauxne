@@ -2,6 +2,7 @@
 extern crate log;
 
 use async_std::task;
+
 use dotenv::dotenv;
 use simplelog::{ConfigBuilder, LevelFilter, SimpleLogger, TermLogger, TerminalMode};
 use std::env;
@@ -14,7 +15,7 @@ async fn main() {
     dotenv().ok();
 
     let log_level = if cfg!(debug_assertions) {
-        /* LevelFilter::Trace */
+        // LevelFilter::Trace
         LevelFilter::Debug
     } else {
         LevelFilter::Info
@@ -42,7 +43,10 @@ async fn main() {
         task::spawn(async move {
             handler_client.disconnect().await.unwrap();
         });
-    }).expect("Failed to set Ctrl+C handler");
+
+        // process::exit(0);
+    })
+    .expect("Failed to set Ctrl+C handler");
 
     client
         .login(&env::var("TOKEN").expect("TOKEN env var missing"))

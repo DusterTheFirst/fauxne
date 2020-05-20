@@ -1,73 +1,88 @@
 //! The bitfield of intents to use
-#![allow(unused)]
 
-/// - GUILD_CREATE
-/// - GUILD_UPDATE
-/// - GUILD_DELETE
-/// - GUILD_ROLE_CREATE
-/// - GUILD_ROLE_UPDATE
-/// - GUILD_ROLE_DELETE
-/// - CHANNEL_CREATE
-/// - CHANNEL_UPDATE
-/// - CHANNEL_DELETE
-/// - CHANNEL_PINS_UPDATE
-pub const GUILDS: u16 = 1 << 0;
+use bitflags::bitflags;
+use serde::{Serialize, Serializer};
 
-/// - GUILD_MEMBER_ADD
-/// - GUILD_MEMBER_UPDATE
-/// - GUILD_MEMBER_REMOVE
-pub const GUILD_MEMBERS: u16 = 1 << 1;
+bitflags! {
+    pub struct Intent: u16 {
+        /// - GUILD_CREATE
+        /// - GUILD_UPDATE
+        /// - GUILD_DELETE
+        /// - GUILD_ROLE_CREATE
+        /// - GUILD_ROLE_UPDATE
+        /// - GUILD_ROLE_DELETE
+        /// - CHANNEL_CREATE
+        /// - CHANNEL_UPDATE
+        /// - CHANNEL_DELETE
+        /// - CHANNEL_PINS_UPDATE
+        const GUILDS = 1 << 0;
 
-/// - GUILD_BAN_ADD
-/// - GUILD_BAN_REMOVE
-pub const GUILD_BANS: u16 = 1 << 2;
+        /// - GUILD_MEMBER_ADD
+        /// - GUILD_MEMBER_UPDATE
+        /// - GUILD_MEMBER_REMOVE
+        const GUILD_MEMBERS = 1 << 1;
 
-/// - GUILD_EMOJIS_UPDATE
-pub const GUILD_EMOJIS: u16 = 1 << 3;
+        /// - GUILD_BAN_ADD
+        /// - GUILD_BAN_REMOVE
+        const GUILD_BANS = 1 << 2;
 
-/// - GUILD_INTEGRATIONS_UPDATE
-pub const GUILD_INTEGRATIONS: u16 = 1 << 4;
+        /// - GUILD_EMOJIS_UPDATE
+        const GUILD_EMOJIS = 1 << 3;
 
-/// - WEBHOOKS_UPDATE
-pub const GUILD_WEBHOOKS: u16 = 1 << 5;
+        /// - GUILD_INTEGRATIONS_UPDATE
+        const GUILD_INTEGRATIONS = 1 << 4;
 
-/// - INVITE_CREATE
-/// - INVITE_DELETE
-pub const GUILD_INVITES: u16 = 1 << 6;
+        /// - WEBHOOKS_UPDATE
+        const GUILD_WEBHOOKS = 1 << 5;
 
-/// - VOICE_STATE_UPDATE
-pub const GUILD_VOICE_STATES: u16 = 1 << 7;
+        /// - INVITE_CREATE
+        /// - INVITE_DELETE
+        const GUILD_INVITES = 1 << 6;
 
-/// - PRESENCE_UPDATE
-pub const GUILD_PRESENCES: u16 = 1 << 8;
+        /// - VOICE_STATE_UPDATE
+        const GUILD_VOICE_STATES = 1 << 7;
 
-/// - MESSAGE_CREATE
-/// - MESSAGE_UPDATE
-/// - MESSAGE_DELETE
-/// - MESSAGE_DELETE_BULK
-pub const GUILD_MESSAGES: u16 = 1 << 9;
+        /// - PRESENCE_UPDATE
+        const GUILD_PRESENCES = 1 << 8;
 
-/// - MESSAGE_REACTION_ADD
-/// - MESSAGE_REACTION_REMOVE
-/// - MESSAGE_REACTION_REMOVE_ALL
-/// - MESSAGE_REACTION_REMOVE_EMOJI
-pub const GUILD_MESSAGE_REACTIONS: u16 = 1 << 10;
+        /// - MESSAGE_CREATE
+        /// - MESSAGE_UPDATE
+        /// - MESSAGE_DELETE
+        /// - MESSAGE_DELETE_BULK
+        const GUILD_MESSAGES = 1 << 9;
 
-/// - TYPING_START
-pub const GUILD_MESSAGE_TYPING: u16 = 1 << 11;
+        /// - MESSAGE_REACTION_ADD
+        /// - MESSAGE_REACTION_REMOVE
+        /// - MESSAGE_REACTION_REMOVE_ALL
+        /// - MESSAGE_REACTION_REMOVE_EMOJI
+        const GUILD_MESSAGE_REACTIONS = 1 << 10;
 
-/// - CHANNEL_CREATE
-/// - MESSAGE_CREATE
-/// - MESSAGE_UPDATE
-/// - MESSAGE_DELETE
-/// - CHANNEL_PINS_UPDATE
-pub const DIRECT_MESSAGES: u16 = 1 << 12;
+        /// - TYPING_START
+        const GUILD_MESSAGE_TYPING = 1 << 11;
 
-/// - MESSAGE_REACTION_ADD
-/// - MESSAGE_REACTION_REMOVE
-/// - MESSAGE_REACTION_REMOVE_ALL
-/// - MESSAGE_REACTION_REMOVE_EMOJI
-pub const DIRECT_MESSAGE_REACTIONS: u16 = 1 << 13;
+        /// - CHANNEL_CREATE
+        /// - MESSAGE_CREATE
+        /// - MESSAGE_UPDATE
+        /// - MESSAGE_DELETE
+        /// - CHANNEL_PINS_UPDATE
+        const DIRECT_MESSAGES = 1 << 12;
 
-/// - TYPING_START
-pub const DIRECT_MESSAGE_TYPING: u16 = 1 << 14;
+        /// - MESSAGE_REACTION_ADD
+        /// - MESSAGE_REACTION_REMOVE
+        /// - MESSAGE_REACTION_REMOVE_ALL
+        /// - MESSAGE_REACTION_REMOVE_EMOJI
+        const DIRECT_MESSAGE_REACTIONS = 1 << 13;
+
+        /// - TYPING_START
+        const DIRECT_MESSAGE_TYPING = 1 << 14;
+    }
+}
+
+impl Serialize for Intent {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_u16(self.bits)
+    }
+}
