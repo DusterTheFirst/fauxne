@@ -2,7 +2,7 @@ use super::{
     super::intents::Intent,
     model::{
         activity::{Activity, Status},
-        id::{ChannelId, GuildID, SequenceID},
+        id::{ChannelID, GuildID, SequenceID},
     },
 };
 use serde::Serialize;
@@ -71,7 +71,7 @@ pub enum OutgoingGatewayData {
     },
     VoiceStateUpdate {
         guild_id: Option<GuildID>,
-        channel_id: Option<ChannelId>,
+        channel_id: Option<ChannelID>,
         self_mute: bool,
         self_deaf: bool,
     },

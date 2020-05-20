@@ -1,10 +1,21 @@
 use super::gateway::{
     intents::Intent,
-    message::incoming::{IncomingGatewayData, IncomingGatewayMessage, Event},
     message::outgoing::{IdentifyProperties, OutgoingGatewayData, OutgoingGatewayMessage},
+    message::{
+        incoming::{Event, IncomingGatewayData, IncomingGatewayMessage},
+        model::{
+            activity::{Activity, Status},
+            text::Emoji,
+        },
+    },
 };
+use crate::gateway::message::model::user::User;
 use async_native_tls::TlsStream;
-use async_std::{net::TcpStream, sync::Mutex, task};
+use async_std::{
+    net::TcpStream,
+    sync::{Mutex, RwLock},
+    task,
+};
 use async_tungstenite::{
     async_std::connect_async,
     stream::Stream,
@@ -43,6 +54,8 @@ pub struct VoiceClient {
     rx: Mutex<GatewayRX>,
     last_seq: AtomicU64,
     heartbeating: AtomicBool,
+    user: RwLock<Option<User>>,
+    session_id: RwLock<Option<String>>,
 }
 
 impl VoiceClient {
@@ -58,6 +71,8 @@ impl VoiceClient {
             rx: Mutex::new(rx),
             last_seq: AtomicU64::new(0),
             heartbeating: AtomicBool::new(false),
+            user: RwLock::new(None),
+            session_id: RwLock::new(None),
         }))
     }
 
@@ -75,29 +90,7 @@ impl VoiceClient {
     }
 
     pub async fn login(self: Arc<Self>, token: &str) -> Result<()> {
-        // self.clone().identify(token).await?;
-        self.send_gateway_message(
-            OutgoingGatewayData::Identify {
-                token: token.into(),
-                properties: IdentifyProperties {
-                    os: if cfg!(target_os = "macos") {
-                        "macos"
-                    } else if cfg!(target_os = "windows") {
-                        "windows"
-                    } else if cfg!(target_os = "linux") {
-                        "linux"
-                    } else {
-                        "unknown"
-                    }
-                    .into(),
-                    browser: "Discord iOS".into(),
-                    device: env!("CARGO_PKG_NAME").into(),
-                },
-                intents: Intent::DIRECT_MESSAGES,
-            }
-            .into(),
-        )
-        .await?;
+        self.clone().identify(token).await?;
 
         loop {
             let mut stream = self.rx.lock().await;
@@ -166,24 +159,58 @@ impl VoiceClient {
             }
             IncomingGatewayData::Heartbeat(seq) => {
                 trace!("Server sent Heartbeat({:?}), responding", seq);
-                self.send_gateway_message(OutgoingGatewayData::HeartbeatAck.into())
-                    .await?;
+                self.send(OutgoingGatewayData::HeartbeatAck).await?;
             }
             IncomingGatewayData::HeartbeatAck => {
                 trace!("Server sent Heartbeat ACK");
             }
-            IncomingGatewayData::Dispatch(event) => {
-                match event {
-                    Event::Ready(data) => {
-                        info!("Gateway Ready!");
-                    }
-                    Event::Unknown(event, data) => warn!(
-                        "Server dispatched an unknown event: \"{}\"\n{}",
-                        event,
-                        serde_json::to_string_pretty(&data)?
-                    ),
+            IncomingGatewayData::Dispatch(event) => match event {
+                Event::Ready(data) => {
+                    info!("Gateway Ready!");
+                    debug!("{:#?}", data);
+
+                    self.session_id.write().await.replace(data.session_id);
+                    self.user.write().await.replace(data.user);
+
+                    self.send(OutgoingGatewayData::PresenceUpdate {
+                        afk: false,
+                        game: Some(Activity::custom("Waiting for a call", Emoji::named("☎️"))),
+                        since: Some(0),
+                        status: Status::Online,
+                    })
+                    .await?;
                 }
-            }
+                Event::CallUpdate(call) => {
+                    info!("Call has been updated: {:#?}", call);
+
+                    if let Some(user) = self.user.read().await.as_ref() {
+                        if call.ringing.contains(&user.id) {
+                            info!("BEING CALLED!!!!");
+
+                            self.clone()
+                                .send(OutgoingGatewayData::VoiceStateUpdate {
+                                    channel_id: call.channel_id,
+                                    guild_id: call.guild_id,
+                                    self_deaf: false,
+                                    self_mute: false,
+                                })
+                                .await?;
+                        }
+                    } else {
+                        warn!("Call update event has been sent before the client has recieved the ready packet. Something might be wrong");
+                    }
+                }
+                Event::CallDelete(call) => info!("Call has been deleted: {:#?}", call),
+                Event::VoiceStateUpdate(state) => {
+                    info!("Voice state has been updated: {:#?}", state)
+                }
+                Event::Muted(event) => debug!("Ignored muted event: {:?}", event),
+                Event::Unknown(event, data) => warn!(
+                    "Server dispatched an unknown event: \"{}\"\n{}",
+                    event,
+                    serde_json::to_string_pretty(&data)?
+                ),
+            },
             IncomingGatewayData::InvalidSession(resumable) => {
                 warn!("Invalid session, Resumable: {}", resumable);
                 todo!();
@@ -210,14 +237,11 @@ impl VoiceClient {
                 debug!("Sending heartbeat with seq {:?}", seq_id);
 
                 if let Err(e) = self
-                    .send_gateway_message(
-                        OutgoingGatewayData::Heartbeat(if seq_id == 0 {
-                            None
-                        } else {
-                            Some(seq_id)
-                        })
-                        .into(),
-                    )
+                    .send(OutgoingGatewayData::Heartbeat(if seq_id == 0 {
+                        None
+                    } else {
+                        Some(seq_id)
+                    }))
                     .await
                 {
                     error!("Failed to send heartbeat: {:?}", e);
@@ -227,34 +251,33 @@ impl VoiceClient {
     }
 
     async fn identify(self: Arc<Self>, token: &str) -> Result<()> {
-        self.send_gateway_message(
-            OutgoingGatewayData::Identify {
-                token: token.into(),
-                properties: IdentifyProperties {
-                    os: if cfg!(target_os = "macos") {
-                        "macos"
-                    } else if cfg!(target_os = "windows") {
-                        "windows"
-                    } else if cfg!(target_os = "linux") {
-                        "linux"
-                    } else {
-                        "unknown"
-                    }
-                    .into(),
-                    browser: "Discord iOS".into(),
-                    device: env!("CARGO_PKG_NAME").into(),
-                },
-                intents: Intent::DIRECT_MESSAGES,
-            }
-            .into(),
-        )
+        self.send(OutgoingGatewayData::Identify {
+            token: token.into(),
+            properties: IdentifyProperties {
+                os: if cfg!(target_os = "macos") {
+                    "macos"
+                } else if cfg!(target_os = "windows") {
+                    "windows"
+                } else if cfg!(target_os = "linux") {
+                    "linux"
+                } else {
+                    "unknown"
+                }
+                .into(),
+                browser: "Discord iOS".into(),
+                device: env!("CARGO_PKG_NAME").into(),
+            },
+            intents: Intent::DIRECT_MESSAGES,
+        })
         .await?;
 
         Ok(())
     }
 
-    async fn send_gateway_message(self: &Arc<Self>, message: OutgoingGatewayMessage) -> Result<()> {
-        debug!("Sending: {:#?}", &message);
+    async fn send(self: &Arc<Self>, data: OutgoingGatewayData) -> Result<()> {
+        debug!("Sending: {:#?}", &data);
+
+        let message = OutgoingGatewayMessage::from(data);
 
         let content = if cfg!(debug_assertions) {
             message.to_json_pretty()?

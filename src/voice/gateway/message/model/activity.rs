@@ -1,94 +1,86 @@
-use super::{
-    id::{ApplicationID, Snowflake},
-    text::Emoji,
-};
-use bitflags::bitflags;
-use serde::{Serialize, Serializer};
+use super::text::Emoji;
+use serde::Serialize;
+use serde_repr::Serialize_repr;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Serialize)]
+#[non_exhaustive]
 /// The user's activity
 pub struct Activity {
     /// The activity's name
-    name: String,
+    pub name: String,
     #[serde(rename = "type")]
     /// The activity's type
-    activity_type: ActivityType,
+    pub activity_type: ActivityType,
+    #[serde(skip_serializing_if = "Option::is_none")]
     /// The stream url, it is validated when type is `Streaming`
-    url: Option<String>,
+    pub url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     /// Unix timestamp of when the activity was added to the user's session
-    created_at: u64,
-    /// Unix timestamps for start and/or end of the game
-    timestamps: Option<ActivityTimestamps>,
-    /// The application id for the game
-    application_id: Option<ApplicationID>,
-    /// What the player is currently doing
-    details: Option<String>,
+    pub created_at: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     /// The user's current party status
-    state: Option<String>,
+    pub state: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     /// The emoji used for a custom status
-    emoji: Option<Emoji>,
-    /// Information for the current party of the player
-    party: Option<Party>,
-    /// Images for the presence and their hover texts
-    assets: Option<Assets>,
-    /// Whether or not the activity is an instanced game session
-    instance: bool,
-    /// Activity flags, describes what the payload includes
-    flags: ActivityFlags,
-}
-#[derive(Debug, Serialize)]
-/// Information for the current party of the player
-pub struct Party {
-    /// The id of the party
-    id: String,
-    /// Used to show the party's current and maximum size
-    size: Option<(u8, u8)>,
+    pub emoji: Option<Emoji>,
 }
 
-#[derive(Debug, Serialize)]
-/// Images for the presence and their hover texts
-pub struct Assets {
-    /// The id for a large asset of the activity, usually a snowflake
-    large_image: Option<Snowflake>,
-    /// Text displayed when hovering over the large image of the activity
-    large_text: Option<String>,
-    ///	The id for a small asset of the activity, usually a snowflake
-    small_image: Option<Snowflake>,
-    /// Text displayed when hovering over the small image of the activity
-    small_text: Option<String>,
-}
+impl Activity {
+    fn created_at() -> u64 {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_secs()
+    }
 
-bitflags! {
-    /// Activity flags, describes what the payload includes
-    pub struct ActivityFlags: u8 {
-        const INSTANCE	    = 1 << 0;
-        const JOIN	        = 1 << 1;
-        const SPECTATE	    = 1 << 2;
-        const JOIN_REQUEST	= 1 << 3;
-        const SYNC	        = 1 << 4;
-        const PLAY	        = 1 << 5;
+    pub fn game(name: &str) -> Self {
+        Activity {
+            activity_type: ActivityType::Game,
+            created_at: Some(Self::created_at()),
+            emoji: None,
+            name: name.into(),
+            state: None,
+            url: None,
+        }
+    }
+
+    pub fn listening(name: &str) -> Self {
+        Activity {
+            activity_type: ActivityType::Listening,
+            created_at: Some(Self::created_at()),
+            emoji: None,
+            name: name.into(),
+            state: None,
+            url: None,
+        }
+    }
+
+    pub fn streaming(name: &str, url: &str) -> Self {
+        Activity {
+            activity_type: ActivityType::Streaming,
+            created_at: Some(Self::created_at()),
+            emoji: None,
+            name: name.into(),
+            state: None,
+            url: Some(url.into()),
+        }
+    }
+
+    pub fn custom(status: &str, emoji: Emoji) -> Self {
+        Activity {
+            activity_type: ActivityType::Custom,
+            created_at: Some(Self::created_at()),
+            emoji: Some(emoji),
+            name: "Custom Status".into(),
+            state: Some(status.into()),
+            url: None,
+        }
     }
 }
 
-impl Serialize for ActivityFlags {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_u8(self.bits)
-    }
-}
-
-#[derive(Debug, Serialize)]
-/// Unix timestamps for start and/or end of the game
-pub struct ActivityTimestamps {
-    /// Unix time (in milliseconds) of when the activity started
-    start: Option<u64>,
-    /// Unix time (in milliseconds) of when the activity ends
-    end: Option<u64>,
-}
-
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize_repr)]
+#[repr(u8)]
 /// The activity's type
 pub enum ActivityType {
     /// `Playing {name}`

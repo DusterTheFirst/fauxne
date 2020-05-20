@@ -6,9 +6,7 @@ use async_std::task;
 use dotenv::dotenv;
 use simplelog::{ConfigBuilder, LevelFilter, SimpleLogger, TermLogger, TerminalMode};
 use std::env;
-use voice::client::VoiceClient;
-
-mod voice;
+use ye_olde_discord::client::VoiceClient;
 
 #[async_std::main]
 async fn main() {
