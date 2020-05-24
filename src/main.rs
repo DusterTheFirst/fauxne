@@ -28,8 +28,8 @@ async fn main() {
 
     TuiLogger::init(
         TuiLoggerConfig::default()
-            // .set_level(log_level)
-            // .set_filter(TargetFilter::Whitelist(vec!["ye_olde_discord".into()])),
+            .set_level(log_level)
+            .set_filter(TargetFilter::Whitelist(vec!["ye_olde_discord".into()])),
     )
     .expect("Failed to init logger");
 

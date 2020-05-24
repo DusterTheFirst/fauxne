@@ -1,4 +1,4 @@
-use logger::{logger_text, TuiLogger, TuiLoggerWidget};
+use logger::{logger_text, TuiLogger};
 use std::{
     io::{self, stdout, Stdout},
     sync::{
@@ -88,7 +88,7 @@ impl UI {
                 .block(Block::default().title("Paragraph").borders(Borders::ALL))
                 .style(Style::default().fg(Color::White).bg(Color::Black))
                 .alignment(Alignment::Left)
-                .wrap(true);
+                .wrap(true).raw(true);
             f.render_widget(console_output, chunks_h[0]);
 
             let state_viewer = Block::default().title("State").borders(Borders::ALL);

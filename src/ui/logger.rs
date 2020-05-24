@@ -121,38 +121,13 @@ impl Log for TuiLogger {
                 file: record.file().unwrap_or_default().into(),
                 level: record.level(),
                 line: record.line().unwrap_or_default(),
-                message: format!("{}", record.args()),
+                message: format!("{}", record.args()).replace("\n", "\n|"),
                 target: record.target().into(),
             });
         }
     }
 
     fn flush(&self) {}
-}
-
-#[derive(Debug, Default)]
-pub struct TuiLoggerWidget<'b> {
-    block: Option<Block<'b>>,
-    style: Style,
-}
-
-impl<'b> TuiLoggerWidget<'b> {
-    const TRACE: Style = Style::new().fg(Color::White).modifier(Modifier::BOLD);
-    const DEBUG: Style = Style::new().fg(Color::Cyan).modifier(Modifier::BOLD);
-    const INFO: Style = Style::new().fg(Color::Blue).modifier(Modifier::BOLD);
-    const WARN: Style = Style::new().fg(Color::Yellow).modifier(Modifier::BOLD);
-    const ERROR: Style = Style::new().fg(Color::Red).modifier(Modifier::BOLD);
-
-    const TIME: Style = Style::new().fg(Color::Gray);
-
-    pub fn block(mut self, block: Block<'b>) -> TuiLoggerWidget<'b> {
-        self.block = Some(block);
-        self
-    }
-    pub fn style(mut self, style: Style) -> TuiLoggerWidget<'b> {
-        self.style = style;
-        self
-    }
 }
 
 pub fn logger_text<'a>(height: u16) -> Vec<Text<'a>> {
@@ -162,7 +137,9 @@ pub fn logger_text<'a>(height: u16) -> Vec<Text<'a>> {
     const WARN: Style = Style::new().fg(Color::Yellow).modifier(Modifier::BOLD);
     const ERROR: Style = Style::new().fg(Color::Red).modifier(Modifier::BOLD);
 
-    const TIME: Style = Style::new().fg(Color::Gray);
+    const TIME: Style = Style::new().modifier(Modifier::BOLD);
+
+    // TODO: CONVERT ALL WHITESPACE INTO INVISIBLE CHARS
 
     (*TUI_LOGGER)
         .messages
@@ -173,7 +150,7 @@ pub fn logger_text<'a>(height: u16) -> Vec<Text<'a>> {
             vec![
                 Text::styled(message.timestamp.format("%H:%M:%S").to_string(), TIME),
                 Text::styled(
-                    message.level.to_string(),
+                    format!(" [{:>5}] ", message.level),
                     match message.level {
                         Level::Trace => TRACE,
                         Level::Debug => DEBUG,
@@ -182,84 +159,16 @@ pub fn logger_text<'a>(height: u16) -> Vec<Text<'a>> {
                         Level::Error => ERROR,
                     },
                 ),
+                Text::raw(match message.level {
+                    Level::Trace => format!(
+                        "{} [{}:{}] {}\n",
+                        message.target, message.file, message.line, message.message
+                    ),
+                    Level::Debug => format!("{} {}\n", message.target, message.message),
+                    _ => format!("{}\n", message.message.clone()),
+                }),
             ]
         })
         .take(height as usize)
         .collect::<Vec<_>>()
-}
-
-fn write_wrap(
-    text: String,
-    area: Rect,
-    buf: &mut Buffer,
-    style: Style,
-    offset: (u16, u16),
-) -> (u16, u16) {
-    let (ox, oy) = offset;
-
-    let width = area.width - ox;
-    let height = area.height - oy;
-
-    let lines = text.len() as u16 / width - ox;
-    let lines = lines + {
-        if text.len() as u16 % width != 0 {
-            1
-        } else {
-            0
-        }
-    };
-
-    let mut chars = 0;
-    for i in (0..lines).rev() {
-        let start = (i * width) as usize;
-        let end = min(start + width as usize, text.len());
-        let text = &text[start..end];
-        chars = text.len() as u16;
-
-        let line = lines - i;
-        let offset = line;
-
-        if offset > height {
-            return (chars, line);
-        }
-
-        buf.set_string(area.x, area.y + area.height - offset, text, style)
-    }
-
-    (chars, lines)
-}
-
-impl<'a> Widget for TuiLoggerWidget<'a> {
-    fn render(mut self, area: Rect, buf: &mut Buffer) {
-        let area = match self.block {
-            Some(ref mut b) => {
-                b.render(area, buf);
-                b.inner(area)
-            }
-            None => area,
-        };
-
-        if area.width < 8 || area.height < 1 {
-            return;
-        }
-
-        buf.set_background(area, self.style.bg);
-
-        let mut offset = 0;
-        for message in (*TUI_LOGGER).messages.write().unwrap().rev_iter() {
-            let (ox, oy) = write_wrap(
-                format!("{:?}", message),
-                area,
-                buf,
-                Default::default(),
-                (0, offset),
-            );
-
-            offset += oy;
-
-            if offset >= area.height {
-                break;
-            }
-        }
-    }
 }
