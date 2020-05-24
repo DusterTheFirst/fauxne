@@ -9,7 +9,7 @@ use super::gateway::{
         },
     },
 };
-use crate::gateway::message::model::user::User;
+use crate::voice::gateway::message::model::user::User;
 use async_native_tls::TlsStream;
 use async_std::{
     net::TcpStream,
@@ -204,7 +204,7 @@ impl VoiceClient {
                 Event::VoiceStateUpdate(state) => {
                     info!("Voice state has been updated: {:#?}", state)
                 }
-                Event::Muted(event) => debug!("Ignored muted event: {:?}", event),
+                Event::Muted(event) => trace!("Ignored muted event: {:?}", event),
                 Event::Unknown(event, data) => warn!(
                     "Server dispatched an unknown event: \"{}\"\n{}",
                     event,
@@ -232,20 +232,25 @@ impl VoiceClient {
             loop {
                 task::sleep(Duration::from_millis(interval)).await;
 
-                let seq_id = self.last_seq.load(Ordering::Acquire);
+                // Retry until heartbeat sent
+                loop {
+                    let seq_id = self.last_seq.load(Ordering::Acquire);
 
-                debug!("Sending heartbeat with seq {:?}", seq_id);
+                    trace!("Sending heartbeat with seq {:?}", seq_id);
 
-                if let Err(e) = self
-                    .send(OutgoingGatewayData::Heartbeat(if seq_id == 0 {
-                        None
+                    if let Err(e) = self
+                        .send(OutgoingGatewayData::Heartbeat(if seq_id == 0 {
+                            None
+                        } else {
+                            Some(seq_id)
+                        }))
+                        .await
+                    {
+                        error!("Failed to send heartbeat, retrying: {:?}", e);
                     } else {
-                        Some(seq_id)
-                    }))
-                    .await
-                {
-                    error!("Failed to send heartbeat: {:?}", e);
-                };
+                        break;
+                    }
+                }
             }
         });
     }
@@ -275,7 +280,10 @@ impl VoiceClient {
     }
 
     async fn send(self: &Arc<Self>, data: OutgoingGatewayData) -> Result<()> {
-        debug!("Sending: {:#?}", &data);
+        if let OutgoingGatewayData::Heartbeat(_) = data {
+        } else {
+            debug!("Sending: {:#?}", &data);
+        }
 
         let message = OutgoingGatewayMessage::from(data);
 
