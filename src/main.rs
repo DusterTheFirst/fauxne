@@ -6,14 +6,7 @@ use async_std::task;
 use dotenv::dotenv;
 use log::LevelFilter;
 use std::{env, io::stdout, process};
-use tui::{
-    backend::CrosstermBackend,
-    layout::{Constraint, Direction, Layout},
-    widgets::{Block, Borders, Widget},
-    Terminal,
-};
-use ye_olde_discord::ui::logger::{TargetFilter, TuiLogger, TuiLoggerConfig};
-use ye_olde_discord::{ui::UI, voice::client::VoiceClient};
+use ye_olde_discord::{start_ui, voice::client::VoiceClient};
 
 #[async_std::main]
 async fn main() {
@@ -26,17 +19,14 @@ async fn main() {
         LevelFilter::Info
     };
 
-    TuiLogger::init(
-        TuiLoggerConfig::default()
-            .set_level(log_level)
-            .set_filter(TargetFilter::Whitelist(vec!["ye_olde_discord".into()])),
-    )
-    .expect("Failed to init logger");
+    // TuiLogger::init(
+    //     TuiLoggerConfig::default()
+    //         .set_level(log_level)
+    //         .set_filter(TargetFilter::Whitelist(vec!["ye_olde_discord".into()])),
+    // )
+    // .expect("Failed to init logger");
 
-    // Init tui for UI drawing
-    let ui = UI::new(1000);
-
-    ui.clone().run();
+    start_ui();
 
     trace!("1");
     debug!("2");
@@ -59,7 +49,7 @@ async fn main() {
     info!("Connected to discord gateway");
 
     let handler_client = client.clone();
-    let handler_ui = ui.clone();
+    // let handler_ui = ui.clone();
     ctrlc::set_handler(move || {
         let handler_client = handler_client.clone();
 
@@ -69,7 +59,7 @@ async fn main() {
             handler_client.disconnect().await.ok();
         });
 
-        handler_ui.clone().stop().ok();
+        // handler_ui.clone().stop().ok();
 
         process::exit(0);
     })

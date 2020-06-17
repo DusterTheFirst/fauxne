@@ -11,16 +11,13 @@ async-native-tls  = "0.3.3"
 async-std = { version = "1.6.0", features = ["attributes", "unstable"] }
 async-tungstenite = { version = "0.5.0", features = ["async-std-runtime", "async-native-tls"] }
 bitflags = "1.2.1"
-chrono = "0.4.11"
-crossterm = "0.17"
 ctrlc = "3.1.4"
 derive_more = "0.99.7"
 dotenv = "0.15.0"
 futures = "0.3.5"
-lazy_static = "1.4.0"
 log = "0.4.8"
 serde = { version = "1.0.110", features = ["derive"] }
 serde_json = "1.0.53"
 serde_repr = "0.1.5"
 thiserror = "1.0.19"
-tui = { version = "0.9", default-features = false, features = ['crossterm'] }
+pretty_env_logger = "0.4.0"
