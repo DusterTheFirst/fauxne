@@ -1,5 +1,6 @@
-#ifndef _LWIPOPTS_H
-#define _LWIPOPTS_H
+#pragma once
+
+// clang-format off
 
 // TODO:
 // Common settings used in most of the pico_w examples
@@ -86,5 +87,3 @@
 #define PPP_DEBUG                   LWIP_DBG_OFF
 #define SLIP_DEBUG                  LWIP_DBG_OFF
 #define DHCP_DEBUG                  LWIP_DBG_OFF
-
-#endif

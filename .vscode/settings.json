@@ -2,13 +2,13 @@
     "cmake.configureOnOpen": false,
     "cmake.statusbar.advanced": {
         "debug": {
-            "visibility": "icon"
+            "visibility": "hidden"
         },
         "launch": {
-            "visibility": "icon"
+            "visibility": "hidden"
         },
         "build": {
-            "visibility": "icon"
+            "visibility": "hidden"
         },
         "buildTarget": {
             "visibility": "hidden"
