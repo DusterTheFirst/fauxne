@@ -13,5 +13,6 @@
         "buildTarget": {
             "visibility": "hidden"
         }
-    }
+    },
+    "cSpell.words": ["fauxne"]
 }

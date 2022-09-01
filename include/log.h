@@ -3,8 +3,8 @@
 #include <stdio.h>
 
 #define STRINGIFY(str) #str
-#define LOG(LEVEL, MESSAGE) \
-    puts(__FILE__ ":" STRINGIFY(__LINE__) " [" #LEVEL "] " #MESSAGE)
+#define LOG(LEVEL, MESSAGE, ...) \
+    printf(__FILE__ ":" STRINGIFY(__LINE__) " [" LEVEL "] " MESSAGE "\n" __VA_OPT__(, __VA_ARGS__)) // NOLINT
 
 #define LOG_LEVEL_TRACE 5
 #define LOG_LEVEL_DEBUG 4
@@ -14,31 +14,33 @@
 #define LOG_LEVEL_NONE 0
 
 #if LOG_LEVEL >= LOG_LEVEL_TRACE
-#define TRACE(MESSAGE) LOG("TRACE", MESSAGE)
+#define TRACE(...) LOG("TRACE", __VA_ARGS__)
 #else
-#define TRACE(MESSAGE)
+#define TRACE(...)
 #endif
 
 #if LOG_LEVEL >= LOG_LEVEL_DEBUG
-#define DEBUG(MESSAGE) LOG("DEBUG", MESSAGE)
+#define DEBUG(...) LOG("DEBUG", __VA_ARGS__)
+#define DBG_str(VAR) LOG("DEBUG", #VAR " = %s", VAR)
 #else
-#define DEBUG(MESSAGE)
+#define DEBUG(...)
+#define DBG_str(VAR)
 #endif
 
 #if LOG_LEVEL >= LOG_LEVEL_INFO
-#define INFO(MESSAGE) LOG("INFO ", MESSAGE)
+#define INFO(...) LOG("INFO ", __VA_ARGS__)
 #else
-#define INFO(MESSAGE)
+#define INFO(...)
 #endif
 
 #if LOG_LEVEL >= LOG_LEVEL_WARN
-#define WARN(MESSAGE) LOG("WARN ", MESSAGE)
+#define WARN(...) LOG("WARN ", __VA_ARGS__)
 #else
-#define WARN(MESSAGE)
+#define WARN(...)
 #endif
 
 #if LOG_LEVEL >= LOG_LEVEL_ERROR
-#define ERROR(MESSAGE) LOG("ERROR", MESSAGE)
+#define ERROR(...) LOG("ERROR", __VA_ARGS__)
 #else
-#define ERROR(MESSAGE)
+#define ERROR(...)
 #endif
