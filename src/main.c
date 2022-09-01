@@ -9,6 +9,8 @@
 #include "lwip/pbuf.h"
 #include "lwip/tcp.h"
 
+#include "dhcpserver.h"
+
 #include "log.h"
 
 int64_t alarm_callback(alarm_id_t id, void *user_data) {
@@ -25,6 +27,12 @@ static const char *const psk = "fake phone";
 
 int main(void) {
     stdio_init_all();
+
+    TRACE("TRACE");
+    DEBUG("DEBUG");
+    INFO("INFO");
+    WARN("WARN");
+    ERROR("ERROR");
 
     if (watchdog_enable_caused_reboot()) {
         WARN("Reboot caused by watchdog timeout");
@@ -45,6 +53,16 @@ int main(void) {
     DBG_str(ssid);
     DBG_str(psk);
 
+    cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
+
+    ip4_addr_t gateway, netmask;
+    IP4_ADDR(&gateway, 192, 168, 69, 1);
+    IP4_ADDR(&netmask, 255, 255, 255, 0);
+
+    // Start the dhcp server
+    dhcp_server_t dhcp_server;
+    dhcp_server_init(&dhcp_server, &gateway, &netmask);
+
     // Interpolator example code
     interp_config cfg = interp_default_config();
     // Now use the various interpolator library functions for your use case
@@ -57,6 +75,10 @@ int main(void) {
     add_alarm_in_ms(2000, alarm_callback, NULL, false);
 
     INFO("Hello, world!");
+
+    while (true) {
+        sleep_until(at_the_end_of_time);
+    }
 
     return 0;
 }

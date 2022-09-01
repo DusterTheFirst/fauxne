@@ -15,67 +15,91 @@ project(fauxne C CXX ASM)
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
+if(COMMAND suppress_tinyusb_warnings)
+    # Explicitly suppress warnings in TinyUSB files which have them (this has to be done
+    # from the project that uses them per CMake "feature"). Note the function comes from
+    # TinyUSB itself, so we have to guard against TinyUSB not being present with the above if
+    suppress_tinyusb_warnings()
+endif()
+
+# DHCP server
+add_library(dhcpserver deps/dhcpserver/dhcpserver.c)
+target_include_directories(dhcpserver SYSTEM INTERFACE deps/dhcpserver)
+target_include_directories(dhcpserver PRIVATE lwip)
+target_link_libraries(dhcpserver
+    pico_cyw43_arch_lwip_threadsafe_background
+)
+
 # Get all of the c files in the src directory
 file(GLOB SOURCES src/*.c)
 
 add_executable(fauxne ${SOURCES})
 
 # Add the headers
-target_include_directories(fauxne PRIVATE include)
-target_include_directories(fauxne SYSTEM INTERFACE include)
-
-target_compile_options(fauxne PRIVATE
-        -Werror
-        -Wall
-        -Wextra
-
-        # -pedantic
-        -Wnull-dereference
-        -Wuninitialized
-        -Wunused
-        -Wcast-align
-        -Wall
-        -Wcast-qual
-        -Wfloat-equal
-        -Wmissing-format-attribute
-
-        # -Wconversion
-        -Wsign-compare
-        $<$<COMPILE_LANGUAGE:C>:-Wstrict-prototypes>
-
-        -Wno-inline
-
-        # todo not sure these are true, but investigate
-        # -Wpacked
-
-        # todo we have some of these in usb_device_tiny to try to make it more readable.. perhaps doxygen would help here instead
-        -Wredundant-decls
-
-        -Wno-shadow
-        -Wno-missing-field-initializers
-        -Wno-missing-braces
-        -Wno-multichar
-
-        # todo useful but fix later
-        # -Wundef
+target_include_directories(fauxne PRIVATE
+    include
+    lwip
 )
 
 pico_set_program_name(fauxne "fauxne")
 pico_set_program_version(fauxne "0.1")
 
-pico_enable_stdio_uart(fauxne 1)
-pico_enable_stdio_usb(fauxne 0)
-
-target_link_libraries(fauxne
-        hardware_interp
-        hardware_timer
-        pico_cyw43_arch_lwip_threadsafe_background
-        pico_stdlib
-)
-
-add_compile_definitions(
-        # PICO_STDIO_ENABLE_CRLF_SUPPORT=0
-        LOG_LEVEL=LOG_LEVEL_TRACE
-)
+pico_enable_stdio_uart(fauxne 0)
+pico_enable_stdio_usb(fauxne 1)
 
 pico_add_extra_outputs(fauxne)
+
+target_link_libraries(fauxne
+    hardware_interp
+    hardware_timer
+    pico_cyw43_arch_lwip_threadsafe_background
+    pico_stdlib
+    dhcpserver
+)
+
+target_compile_definitions(fauxne PRIVATE
+
+    # PICO_STDIO_ENABLE_CRLF_SUPPORT=0
+    LOG_LEVEL=LOG_LEVEL_TRACE
+)
+
+target_compile_options(fauxne PRIVATE
+
+    # Remove absoulte path from __FILE__
+    # see https://stackoverflow.com/a/53848526
+    -ffile-prefix-map=${CMAKE_SOURCE_DIR}/=
+
+    -Werror
+    -Wall
+    -Wextra
+
+    # -pedantic
+    -Wnull-dereference
+    -Wuninitialized
+    -Wunused
+    -Wcast-align
+    -Wall
+    -Wcast-qual
+    -Wfloat-equal
+    -Wmissing-format-attribute
+
+    # -Wconversion
+    -Wsign-compare
+    $<$<COMPILE_LANGUAGE:C>:-Wstrict-prototypes>
+
+    -Wno-inline
+
+    # todo not sure these are true, but investigate
+    # -Wpacked
+
+    # todo we have some of these in usb_device_tiny to try to make it more readable.. perhaps doxygen would help here instead
+    -Wredundant-decls
+
+    -Wno-shadow
+    -Wno-missing-field-initializers
+    -Wno-missing-braces
+    -Wno-multichar
+
+    # todo useful but fix later
+    # -Wundef
+)

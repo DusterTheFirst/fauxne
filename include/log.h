@@ -2,9 +2,18 @@
 
 #include <stdio.h>
 
-#define STRINGIFY(str) #str
-#define LOG(LEVEL, MESSAGE, ...) \
-    printf(__FILE__ ":" STRINGIFY(__LINE__) " [" LEVEL "] " MESSAGE "\n" __VA_OPT__(, __VA_ARGS__)) // NOLINT
+#define S_INTERNAL(x) #x
+#define STRINGIFY(x) S_INTERNAL(x)
+
+#define __FILE_LINE__ __FILE__ ":" STRINGIFY(__LINE__)
+
+#define LOG(LEVEL, MESSAGE, ...)                                   \
+    {                                                              \
+        const uint32_t ms = to_ms_since_boot(get_absolute_time()); \
+        printf("%ld.%.03ld " __FILE_LINE__                         \
+               " [" LEVEL "] " MESSAGE "\n",                       \
+               ms / 1000, ms % 1000 __VA_OPT__(, __VA_ARGS__));    \
+    }
 
 #define LOG_LEVEL_TRACE 5
 #define LOG_LEVEL_DEBUG 4
