@@ -2,6 +2,7 @@
 #include "hardware/interp.h"
 #include "hardware/timer.h"
 #include "hardware/watchdog.h"
+#include "pico/binary_info.h"
 #include "pico/cyw43_arch.h"
 #include "pico/stdlib.h"
 #include "tusb.h"
@@ -13,6 +14,11 @@
 #include "dhcpserver.h"
 
 #include "log.h"
+
+bi_decl(bi_program_name("fauxne"));
+bi_decl(bi_program_description("POTS FXO emulator"));
+bi_decl(bi_program_version_string("0.0"));
+bi_decl(bi_program_url("https://github.com/DusterTheFirst/fauxne"));
 
 int64_t alarm_callback(alarm_id_t id, void *user_data) {
     // Suppress -Wunused-parameter
@@ -83,14 +89,14 @@ int main(void) {
     // // Timer example code - This example fires off the callback after 2000ms
     // add_alarm_in_ms(2000, alarm_callback, NULL, false);
 
-    INFO("Hello, world!");
+    const struct tcp_pcb *protocol_control_block =
+        tcp_new_ip_type(IPADDR_TYPE_V4);
 
-    const struct tcp_pcb *protocol_control_block = tcp_new_ip_type(IPADDR_TYPE_V4);
     if (protocol_control_block == NULL) {
-        panic("failed to create tcp protocol control block");
-    }
+        ERROR("failed to create tcp protocol control block");
 
-    panic("piss");
+        return 1;
+    }
 
     while (true) {
         sleep_until(at_the_end_of_time);

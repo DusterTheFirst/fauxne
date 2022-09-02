@@ -5,6 +5,9 @@ build:
     cmake --build {{justfile_directory()}}/build --config RelWithDebInfo --target all -j $(grep -c ^processor /proc/cpuinfo) --
 
 upload: build
+    sudo picotool reboot -f -u
+    inotifywait /run/media/dusterthefirst/ -e create
+    sleep 1
     cmake --install {{justfile_directory()}}/build
 
 minicom:
@@ -12,6 +15,3 @@ minicom:
 
 screen:
     screen /dev/ttyACM0
-
-wait-mount:
-    inotifywait /run/mount/dusterthefirst/ -e create

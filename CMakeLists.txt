@@ -50,9 +50,6 @@ target_include_directories(fauxne PRIVATE
     lwip
 )
 
-pico_set_program_name(fauxne "fauxne")
-pico_set_program_version(fauxne "0.1")
-
 pico_enable_stdio_uart(fauxne 0)
 pico_enable_stdio_usb(fauxne 1)
 
