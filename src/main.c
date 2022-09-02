@@ -4,6 +4,7 @@
 #include "hardware/watchdog.h"
 #include "pico/cyw43_arch.h"
 #include "pico/stdlib.h"
+#include "tusb.h"
 #include <stdio.h>
 
 #include "lwip/pbuf.h"
@@ -27,6 +28,14 @@ static const char *const psk = "fake phone";
 
 int main(void) {
     stdio_init_all();
+
+    // Wait for usb connection if it is the only configured STDIO output
+#if LIB_PICO_STDIO_USB && !LIB_PICO_STDIO_UART && !LIB_PICO_STDIO_SEMIHOSTING
+    while (!tud_cdc_connected()) {
+        sleep_ms(100);
+    }
+    TRACE("USB CDC Connected, starting boot process");
+#endif
 
     TRACE("TRACE");
     DEBUG("DEBUG");

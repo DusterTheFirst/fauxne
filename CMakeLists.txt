@@ -7,6 +7,8 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(PICO_BOARD pico_w)
 
+set(PICO_BOOTSEL_MOUNT /run/media/dusterthefirst/RPI-RP2/)
+
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
 
@@ -20,6 +22,13 @@ if(COMMAND suppress_tinyusb_warnings)
     # from the project that uses them per CMake "feature"). Note the function comes from
     # TinyUSB itself, so we have to guard against TinyUSB not being present with the above if
     suppress_tinyusb_warnings()
+endif()
+
+if(TARGET pico_lwip)
+    set_source_files_properties(
+        ${PICO_LWIP_PATH}/src/core/ipv4/ip4_frag.c
+        PROPERTIES
+        COMPILE_FLAGS "-Wno-null-dereference")
 endif()
 
 # DHCP server
@@ -61,6 +70,7 @@ target_compile_definitions(fauxne PRIVATE
 
     # PICO_STDIO_ENABLE_CRLF_SUPPORT=0
     LOG_LEVEL=LOG_LEVEL_TRACE
+    PICO_STDIO_USB_STDOUT_TIMEOUT_US=2000000000
 )
 
 target_compile_options(fauxne PRIVATE
@@ -103,3 +113,16 @@ target_compile_options(fauxne PRIVATE
     # todo useful but fix later
     # -Wundef
 )
+
+# Upload build artifacts to the board
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/fauxne.uf2 DESTINATION ${PICO_BOOTSEL_MOUNT})
+# add_custom_command(
+#     TARGET fauxne
+#     POST_BUILD
+#     COMMAND ${CMAKE_COMMAND}
+#     MESSAGE "Uploading uf2 file to pico bootsel"
+#     ARGS
+#     -Ddestination=${PICO_BOOTSEL_MOUNT}
+#     -Dsource=$<TARGET_FILE:fauxne>
+#     -P ${CMAKE_CURRENT_SOURCE_DIR}/upload.cmake
+# )
