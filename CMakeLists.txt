@@ -71,6 +71,7 @@ target_compile_definitions(fauxne PRIVATE
     # PICO_STDIO_ENABLE_CRLF_SUPPORT=0
     LOG_LEVEL=LOG_LEVEL_TRACE
     PICO_STDIO_USB_STDOUT_TIMEOUT_US=2000000000
+    # PICO_PANIC_FUNCTION=pico_panic
 )
 
 target_compile_options(fauxne PRIVATE
@@ -116,13 +117,3 @@ target_compile_options(fauxne PRIVATE
 
 # Upload build artifacts to the board
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/fauxne.uf2 DESTINATION ${PICO_BOOTSEL_MOUNT})
-# add_custom_command(
-#     TARGET fauxne
-#     POST_BUILD
-#     COMMAND ${CMAKE_COMMAND}
-#     MESSAGE "Uploading uf2 file to pico bootsel"
-#     ARGS
-#     -Ddestination=${PICO_BOOTSEL_MOUNT}
-#     -Dsource=$<TARGET_FILE:fauxne>
-#     -P ${CMAKE_CURRENT_SOURCE_DIR}/upload.cmake
-# )

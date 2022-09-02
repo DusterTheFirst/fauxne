@@ -7,5 +7,11 @@ build:
 upload: build
     cmake --install {{justfile_directory()}}/build
 
-monitor:
-    minicom -b 115200 -o -D /dev/ttyACM0
+minicom:
+    minicom -b 115200 -o -D /dev/ttyACM0 -c on
+
+screen:
+    screen /dev/ttyACM0
+
+wait-mount:
+    inotifywait /run/mount/dusterthefirst/ -e create

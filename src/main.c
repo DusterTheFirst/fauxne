@@ -72,18 +72,25 @@ int main(void) {
     dhcp_server_t dhcp_server;
     dhcp_server_init(&dhcp_server, &gateway, &netmask);
 
-    // Interpolator example code
-    interp_config cfg = interp_default_config();
-    // Now use the various interpolator library functions for your use case
-    // e.g. interp_config_clamp(&cfg, true);
-    //      interp_config_shift(&cfg, 2);
-    // Then set the config
-    interp_set_config(interp0, 0, &cfg);
+    // // Interpolator example code
+    // interp_config cfg = interp_default_config();
+    // // Now use the various interpolator library functions for your use case
+    // // e.g. interp_config_clamp(&cfg, true);
+    // //      interp_config_shift(&cfg, 2);
+    // // Then set the config
+    // interp_set_config(interp0, 0, &cfg);
 
-    // Timer example code - This example fires off the callback after 2000ms
-    add_alarm_in_ms(2000, alarm_callback, NULL, false);
+    // // Timer example code - This example fires off the callback after 2000ms
+    // add_alarm_in_ms(2000, alarm_callback, NULL, false);
 
     INFO("Hello, world!");
+
+    const struct tcp_pcb *protocol_control_block = tcp_new_ip_type(IPADDR_TYPE_V4);
+    if (protocol_control_block == NULL) {
+        panic("failed to create tcp protocol control block");
+    }
+
+    panic("piss");
 
     while (true) {
         sleep_until(at_the_end_of_time);

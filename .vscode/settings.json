@@ -14,5 +14,14 @@
             "visibility": "hidden"
         }
     },
-    "cSpell.words": ["fauxne"]
+    "cSpell.words": [
+        "fauxne"
+    ],
+    "files.associations": {
+        "*.sxcu": "json",
+        "**/.cargo/config": "toml",
+        "*.pio": "platformio-debug.asm",
+        "*.njk": "nunjucks",
+        "time.h": "c"
+    }
 }
