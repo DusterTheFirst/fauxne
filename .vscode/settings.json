@@ -22,6 +22,7 @@
         "**/.cargo/config": "toml",
         "*.pio": "platformio-debug.asm",
         "*.njk": "nunjucks",
-        "time.h": "c"
+        "time.h": "c",
+        "arch_common.h": "c"
     }
 }

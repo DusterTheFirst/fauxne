@@ -4,22 +4,18 @@
 #include "pico/time.h"
 #include <stdio.h>
 
-#define S_INTERNAL(x) #x
-#define STRINGIFY(x) S_INTERNAL(x)
-
-#define __FILE_LINE__ __FILE__ ":" STRINGIFY(__LINE__)
-
-#define LOG(LEVEL, MESSAGE, ...)                                          \
-    {                                                                     \
-        const uint32_t ms = to_ms_since_boot(get_absolute_time());        \
-        const uint32_t whole_ms = ms % 1000;                              \
-        const uint32_t whole_sec = ms / 1000 % 60;                        \
-        const uint32_t whole_min = ms / (1000 * 60) & 60;                 \
-        printf(ANSI_FOREGROUND_WHITE                                      \
-               "%.02ld:%.02ld.%.03ld " ANSI_FOREGROUND_GRAY __FILE_LINE__ \
-               " [" ANSI_RESET LEVEL ANSI_FOREGROUND_GRAY                 \
-               "] " ANSI_FOREGROUND_BRIGHT_WHITE MESSAGE "\n",            \
-               whole_min, whole_sec, whole_ms __VA_OPT__(, __VA_ARGS__)); \
+#define LOG(LEVEL, MESSAGE, ...)                                             \
+    {                                                                        \
+        const uint32_t ms = to_ms_since_boot(get_absolute_time());           \
+        const uint32_t whole_ms = ms % 1000;                                 \
+        const uint32_t whole_sec = ms / 1000 % 60;                           \
+        const uint32_t whole_min = ms / (1000 * 60) & 60;                    \
+        printf(ANSI_FOREGROUND_WHITE                                         \
+               "%.02ld:%.02ld.%.03ld " ANSI_FOREGROUND_GRAY __FILE__ ":%-3d" \
+               " [" ANSI_RESET LEVEL ANSI_FOREGROUND_GRAY                    \
+               "] " ANSI_FOREGROUND_BRIGHT_WHITE MESSAGE "\n",               \
+               whole_min, whole_sec, whole_ms,                               \
+               __LINE__ __VA_OPT__(, __VA_ARGS__));                          \
     }
 
 #define LOG_LEVEL_TRACE 5

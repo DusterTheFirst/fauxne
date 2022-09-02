@@ -2,7 +2,7 @@ default:
     @just --list
 
 build:
-    cmake --build {{justfile_directory()}}/build --config RelWithDebInfo --target all -j $(grep -c ^processor /proc/cpuinfo) --
+    cmake --build {{justfile_directory()}}/build --config Debug --target all -j $(grep -c ^processor /proc/cpuinfo) --
 
 upload: build
     sudo picotool reboot -f -u
@@ -15,3 +15,6 @@ minicom:
 
 screen:
     screen /dev/ttyACM0
+
+sleep:
+    sleep 1
