@@ -7,8 +7,6 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(PICO_BOARD pico_w)
 
-set(PICO_BOOTSEL_MOUNT /run/media/dusterthefirst/RPI-RP2/)
-
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
 
@@ -40,12 +38,15 @@ target_link_libraries(dhcpserver
 )
 
 # HTTP parser
-set(BUILD_SHARED_LIBS OFF)
-set(BUILD_STATIC_LIBS ON)
-add_subdirectory(deps/llhttp)
+add_library(llhttp STATIC
+    deps/llhttp/src/llhttp.c
+    deps/llhttp/src/http.c
+    deps/llhttp/src/api.c)
+target_include_directories(llhttp SYSTEM INTERFACE deps/llhttp/include)
+target_include_directories(llhttp PRIVATE deps/llhttp/include)
 
 # Get all of the c files in the src directory
-file(GLOB SOURCES src/*.c)
+file(GLOB SOURCES src/*.c src/*/*.c)
 
 add_executable(fauxne ${SOURCES})
 
@@ -62,11 +63,12 @@ pico_add_extra_outputs(fauxne)
 
 target_link_libraries(fauxne
     hardware_interp
-    hardware_timer
     pico_cyw43_arch_lwip_threadsafe_background
     pico_stdlib
+    pico_multicore
+    pico_time
     dhcpserver
-    llhttp::llhttp
+    llhttp
 )
 
 target_compile_definitions(fauxne PRIVATE
@@ -74,6 +76,7 @@ target_compile_definitions(fauxne PRIVATE
     # PICO_STDIO_ENABLE_CRLF_SUPPORT=0
     LOG_LEVEL=LOG_LEVEL_TRACE
     PICO_STDIO_USB_STDOUT_TIMEOUT_US=2000000000
+
     # PICO_PANIC_FUNCTION=pico_panic
 )
 
@@ -117,6 +120,3 @@ target_compile_options(fauxne PRIVATE
     # todo useful but fix later
     # -Wundef
 )
-
-# Upload build artifacts to the board
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/fauxne.uf2 DESTINATION ${PICO_BOOTSEL_MOUNT})

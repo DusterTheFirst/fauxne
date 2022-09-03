@@ -1,3 +1,6 @@
+PICO_BOOTSEL_MOUNT := "/run/media/dusterthefirst/RPI-RP2/"
+
+
 default:
     @just --list
 
@@ -8,7 +11,7 @@ upload: build
     sudo picotool reboot -f -u
     inotifywait /run/media/dusterthefirst/ -e create
     sleep 1
-    cmake --install {{justfile_directory()}}/build
+    cp {{justfile_directory()}}/build/fauxne.uf2 {{PICO_BOOTSEL_MOUNT}}
 
 minicom:
     minicom -b 115200 -o -D /dev/ttyACM0 -c on

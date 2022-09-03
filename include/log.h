@@ -1,21 +1,22 @@
 #pragma once
 
 #include "ansi.h"
+#include "pico/stdio.h"
 #include "pico/time.h"
 #include <stdio.h>
 
-#define LOG(LEVEL, MESSAGE, ...)                                             \
-    {                                                                        \
-        const uint32_t ms = to_ms_since_boot(get_absolute_time());           \
-        const uint32_t whole_ms = ms % 1000;                                 \
-        const uint32_t whole_sec = ms / 1000 % 60;                           \
-        const uint32_t whole_min = ms / (1000 * 60) & 60;                    \
-        printf(ANSI_FOREGROUND_WHITE                                         \
-               "%.02ld:%.02ld.%.03ld " ANSI_FOREGROUND_GRAY __FILE__ ":%-3d" \
-               " [" ANSI_RESET LEVEL ANSI_FOREGROUND_GRAY                    \
-               "] " ANSI_FOREGROUND_BRIGHT_WHITE MESSAGE "\n",               \
-               whole_min, whole_sec, whole_ms,                               \
-               __LINE__ __VA_OPT__(, __VA_ARGS__));                          \
+#define LOG(LEVEL, MESSAGE, ...)                                           \
+    {                                                                      \
+        const uint32_t ms = to_ms_since_boot(get_absolute_time());         \
+        const uint32_t whole_ms = ms % 1000;                               \
+        const uint32_t whole_sec = ms / 1000 % 60;                         \
+        const uint32_t whole_min = ms / (1000 * 60) & 60;                  \
+        printf(ANSI_FOREGROUND_WHITE                                       \
+               "%.02ld:%.02ld.%.03ld " ANSI_FOREGROUND_GRAY __FILE__ ":%d" \
+               " [" ANSI_RESET LEVEL ANSI_FOREGROUND_GRAY                  \
+               "] " ANSI_FOREGROUND_BRIGHT_WHITE MESSAGE "\n",             \
+               whole_min, whole_sec, whole_ms,                             \
+               __LINE__ __VA_OPT__(, __VA_ARGS__));                        \
     }
 
 #define LOG_LEVEL_TRACE 5
@@ -35,10 +36,10 @@
 
 #if LOG_LEVEL >= LOG_LEVEL_DEBUG
 #define DEBUG(...) LOG(ANSI_FOREGROUND_CYAN "DEBUG", __VA_ARGS__)
-#define DBG_str(VAR)                      \
-    DEBUG(ANSI_FOREGROUND_GRAY #VAR       \
-          " = \"" ANSI_FOREGROUND_WHITE   \
-          "%s" ANSI_FOREGROUND_GRAY "\"", \
+#define DBG(FMT, VAR)                        \
+    DEBUG(ANSI_FOREGROUND_GRAY #VAR          \
+          " = \"" ANSI_FOREGROUND_WHITE      \
+              FMT ANSI_FOREGROUND_GRAY "\"", \
           VAR)
 #else
 #define DEBUG(...)
