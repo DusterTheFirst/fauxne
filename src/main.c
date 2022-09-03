@@ -4,18 +4,18 @@
 #include "hardware/watchdog.h"
 #include "pico/binary_info.h"
 #include "pico/cyw43_arch.h"
-#include "pico/stdlib.h"
 #include "pico/multicore.h"
+#include "pico/stdlib.h"
 #include "tusb.h"
 #include <stdio.h>
 
+#include "lwip/apps/httpd.h"
 #include "lwip/pbuf.h"
 #include "lwip/tcp.h"
 
 #include "dhcpserver.h"
 
 #include "error.h"
-#include "http.h"
 #include "log.h"
 
 bi_decl(bi_program_name("fauxne"));
@@ -94,11 +94,9 @@ int main(void) {
     // // Timer example code - This example fires off the callback after 2000ms
     // add_alarm_in_ms(2000, alarm_callback, NULL, false);
 
-    http_server_t server;
-    TCP_TRY(http_server_init(&gateway, 80, &server),
-            "http server failed to initialize");
+    httpd_init();
 
-    TRACE("HTTP server started");    
+    TRACE("HTTP server started at http://192.168.4.1");
 
     while (true) {
         sleep_ms(100);
