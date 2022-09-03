@@ -32,12 +32,17 @@ if(TARGET pico_lwip)
 endif()
 
 # DHCP server
-add_library(dhcpserver deps/dhcpserver/dhcpserver.c)
+add_library(dhcpserver STATIC deps/dhcpserver/dhcpserver.c)
 target_include_directories(dhcpserver SYSTEM INTERFACE deps/dhcpserver)
 target_include_directories(dhcpserver PRIVATE lwip)
 target_link_libraries(dhcpserver
     pico_cyw43_arch_lwip_threadsafe_background
 )
+
+# HTTP parser
+set(BUILD_SHARED_LIBS OFF)
+set(BUILD_STATIC_LIBS ON)
+add_subdirectory(deps/llhttp)
 
 # Get all of the c files in the src directory
 file(GLOB SOURCES src/*.c)
@@ -61,6 +66,7 @@ target_link_libraries(fauxne
     pico_cyw43_arch_lwip_threadsafe_background
     pico_stdlib
     dhcpserver
+    llhttp::llhttp
 )
 
 target_compile_definitions(fauxne PRIVATE

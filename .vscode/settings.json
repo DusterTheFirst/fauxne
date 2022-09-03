@@ -14,15 +14,6 @@
             "visibility": "hidden"
         }
     },
-    "cSpell.words": [
-        "fauxne"
-    ],
-    "files.associations": {
-        "*.sxcu": "json",
-        "**/.cargo/config": "toml",
-        "*.pio": "platformio-debug.asm",
-        "*.njk": "nunjucks",
-        "time.h": "c",
-        "arch_common.h": "c"
-    }
+    "cSpell.words": ["fauxne"],
+    "git.autoRepositoryDetection": false,
 }
