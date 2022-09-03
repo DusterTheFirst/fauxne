@@ -23,13 +23,14 @@ bi_decl(bi_program_description("POTS FXO emulator"));
 bi_decl(bi_program_version_string("0.0"));
 bi_decl(bi_program_url("https://github.com/DusterTheFirst/fauxne"));
 
-int64_t alarm_callback(alarm_id_t id, void *user_data) {
-    // Suppress -Wunused-parameter
-    (void)id;
-    (void)user_data;
+bool timer_callback(repeating_timer_t *timer) {
+    bool *is_on = timer->user_data;
 
-    // Put your timeout handler code in here
-    return 0;
+    *is_on = !*is_on;
+
+    cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, *is_on);
+
+    return true;
 }
 
 static const char *const ssid = "fauxne";
@@ -91,18 +92,21 @@ int main(void) {
     // // Then set the config
     // interp_set_config(interp0, 0, &cfg);
 
-    // // Timer example code - This example fires off the callback after 2000ms
-    // add_alarm_in_ms(2000, alarm_callback, NULL, false);
+    // Timer example code - This example fires off the callback after 2000ms
+    static repeating_timer_t timer;
+    static bool is_on = false;
+    add_repeating_timer_ms(-250, timer_callback, &is_on, &timer);
 
     httpd_init();
 
     TRACE("HTTP server started at http://192.168.4.1");
 
     while (true) {
-        sleep_ms(100);
-        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
-        sleep_ms(100);
-        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
+        __wfe();
+        // cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, true);
+        // sleep_ms(100);
+        // cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, false);
+        // sleep_ms(100);
     }
 
     dhcp_server_deinit(&dhcp_server);

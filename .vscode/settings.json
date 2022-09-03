@@ -20,20 +20,4 @@
         "multicore"
     ],
     "git.autoRepositoryDetection": false,
-    "files.associations": {
-        "*.sxcu": "json",
-        "**/.cargo/config": "toml",
-        "*.pio": "platformio-debug.asm",
-        "*.njk": "nunjucks",
-        "errno.h": "c",
-        "tcp.h": "c",
-        "math.h": "c",
-        "llhttp.h": "c",
-        "platform.h": "c",
-        "type_traits": "c",
-        "timer.h": "c",
-        "binary_info.h": "c",
-        "httpd.h": "c",
-        "log.h": "c"
-    },
 }

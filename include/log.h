@@ -14,7 +14,7 @@
         printf(ANSI_FOREGROUND_WHITE                                       \
                "%.02ld:%.02ld.%.03ld " ANSI_FOREGROUND_GRAY __FILE__ ":%d" \
                " [" ANSI_RESET LEVEL ANSI_FOREGROUND_GRAY                  \
-               "] " ANSI_FOREGROUND_BRIGHT_WHITE MESSAGE "\n",             \
+               "] " ANSI_FOREGROUND_BRIGHT_WHITE MESSAGE ANSI_RESET "\n",  \
                whole_min, whole_sec, whole_ms,                             \
                __LINE__ __VA_OPT__(, __VA_ARGS__));                        \
     }
