@@ -4,8 +4,8 @@
 #include "hardware/watchdog.h"
 #include "pico/binary_info.h"
 #include "pico/cyw43_arch.h"
-#include "pico/stdlib.h"
 #include "pico/multicore.h"
+#include "pico/stdlib.h"
 #include "tusb.h"
 #include <stdio.h>
 
@@ -98,12 +98,12 @@ int main(void) {
     TCP_TRY(http_server_init(&gateway, 80, &server),
             "http server failed to initialize");
 
-    TRACE("HTTP server started");    
+    TRACE("HTTP server started");
 
     while (true) {
-        sleep_ms(100);
+        sleep_ms(1000);
         cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
-        sleep_ms(100);
+        sleep_ms(1000);
         cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
     }
 

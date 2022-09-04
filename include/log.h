@@ -38,8 +38,8 @@
 #define DEBUG(...) LOG(ANSI_FOREGROUND_CYAN "DEBUG", __VA_ARGS__)
 #define DBG(FMT, VAR)                        \
     DEBUG(ANSI_FOREGROUND_GRAY #VAR          \
-          " = \"" ANSI_FOREGROUND_WHITE      \
-              FMT ANSI_FOREGROUND_GRAY "\"", \
+          " = " ANSI_FOREGROUND_WHITE      \
+              FMT ANSI_FOREGROUND_GRAY "", \
           VAR)
 #else
 #define DEBUG(...)

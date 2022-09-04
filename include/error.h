@@ -16,6 +16,10 @@
     ERROR(MESSAGE ": %s (error %d)" __VA_OPT__(, __VA_ARGS__), \
           tcp_error(_ERROR), _ERROR);
 
+#define LLHTTP_ERROR(_ERROR, MESSAGE, ...)                     \
+    ERROR(MESSAGE ": %s (error %d)" __VA_OPT__(, __VA_ARGS__), \
+          llhttp_errno_name(_ERROR), _ERROR);
+
 #include "lwip/err.h"
 
 inline char *tcp_error(err_t code) {
