@@ -37,6 +37,14 @@ target_link_libraries(dhcpserver
     pico_cyw43_arch_lwip_threadsafe_background
 )
 
+# HTTP parser
+add_library(llhttp STATIC
+    deps/llhttp/src/llhttp.c
+    deps/llhttp/src/http.c
+    deps/llhttp/src/api.c)
+target_include_directories(llhttp SYSTEM INTERFACE deps/llhttp/include)
+target_include_directories(llhttp PRIVATE deps/llhttp/include)
+
 # Get all of the c files in the src directory
 file(GLOB SOURCES src/*.c src/*/*.c)
 
@@ -59,8 +67,8 @@ target_link_libraries(fauxne
     pico_stdlib
     pico_multicore
     pico_time
-    pico_lwip_http
     dhcpserver
+    llhttp
 )
 
 target_compile_definitions(fauxne PRIVATE
