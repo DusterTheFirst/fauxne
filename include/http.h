@@ -22,6 +22,7 @@ inline static uint16_t http_server_local_port(http_server_t *server) {
     return server->server_pcb->local_port;
 }
 
+// TODO: should this be a tagged union instead?
 typedef struct http_conn_state {
     http_raw_response_t response;
     http_raw_request_t request;

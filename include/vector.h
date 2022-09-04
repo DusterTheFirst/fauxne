@@ -43,9 +43,9 @@
         return &vector->buffer[vector->length - 1];                        \
     }                                                                      \
                                                                            \
-    static inline void NAME##_push(NAME##_t *vector, TYPE value) {         \
+    static inline TYPE *NAME##_push(NAME##_t *vector, TYPE value) {        \
         if (vector == NULL) {                                              \
-            return;                                                        \
+            return NULL;                                                   \
         }                                                                  \
                                                                            \
         if (vector->length == vector->capacity) {                          \
@@ -59,6 +59,19 @@
             }                                                              \
         }                                                                  \
                                                                            \
-        vector->buffer[vector->length] = value;                            \
+        TYPE *new_item = &vector->buffer[vector->length];                  \
         vector->length += 1;                                               \
+                                                                           \
+        *new_item = value;                                                 \
+        return new_item;                                                   \
+    }                                                                      \
+                                                                           \
+    static inline void NAME##_shrink_to_fit(NAME##_t *vector) {            \
+        if (vector == NULL) {                                              \
+            return;                                                        \
+        }                                                                  \
+                                                                           \
+        vector->capacity = vector->length;                                 \
+        vector->buffer = realloc(vector->buffer,                           \
+                                 sizeof(TYPE) * vector->capacity);         \
     }

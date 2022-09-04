@@ -31,12 +31,21 @@ static inline header_name_value_t header_name_value_new(void) {
 
 DEFINE_VECTOR(header_name_value_t, header_map)
 
-// static inline void str_vector_debug(str_vector_t *vector) {
-//     DEBUG("str_vector [");
-//     for (size_t i = 0; i < vector->length; i++) {
-//         str_t *str = &vector->buffer[i];
+static inline void header_map_debug(header_map_t *map) {
+    DEBUG("header_map [");
+    for (size_t header = 0; header < map->length; header += 1) {
+        header_name_value_t *name_value = &map->buffer[header];
 
-//         DEBUG("%d: %.*s", i, str->len, str->ptr);
-//     }
-//     printf("\n] str_vector\n");
-// }
+        chunked_str_printf(&name_value->header_name.text);
+        printf(":\n");
+
+        header_text_vector_t *header_values = &name_value->header_values;
+        for (size_t value = 0; value < header_values->length; value += 1) {
+            printf("    - \"");
+            chunked_str_printf(&header_values->buffer[value].text);
+            printf("\"\n");
+        }
+        putchar('\n');
+    }
+    printf("] header_map\n");
+}

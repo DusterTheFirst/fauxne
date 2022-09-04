@@ -47,16 +47,10 @@ static inline str_t str_slice_to_end(str_t *str, size_t start) {
 
 DEFINE_VECTOR(str_t, chunked_str)
 
-// TODO: make less scuffed
-static inline void chunked_str_debug(chunked_str_t *chunked) {
-    DEBUG("chunked_str {");
-
+static inline void chunked_str_printf(chunked_str_t *chunked) {
     for (size_t i = 0; i < chunked->length; i++) {
         str_t *str = &chunked->buffer[i];
 
         printf("%.*s", str->len, str->ptr);
     }
-    printf("\n} chunked_str\n");
 }
-
-

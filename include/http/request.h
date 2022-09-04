@@ -1,12 +1,15 @@
 #pragma once
 
-#include "llhttp.h"
-#include "str.h"
 #include "headers.h"
+#include "llhttp.h"
+#include "lwip/pbuf.h"
+#include "str.h"
 
 typedef struct http_raw_request {
     llhttp_t parser;
-    str_t url;
+    struct pbuf *packets;
+
+    chunked_str_t url;
     header_map_t headers;
 } http_raw_request_t;
 
