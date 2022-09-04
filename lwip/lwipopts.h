@@ -2,20 +2,9 @@
 
 // clang-format off
 
+// TODO:
 // Common settings used in most of the pico_w examples
 // (see https://www.nongnu.org/lwip/2_1_x/group__lwip__opts.html for details)
-
-#define LWIP_HTTPD_SUPPORT_V09              0
-#define LWIP_HTTPD_CGI_SSI                  1
-#define LWIP_HTTPD_SUPPORT_EXTSTATUS        1
-#define LWIP_HTTPD_SUPPORT_11_KEEPALIVE     1
-#define HTTPD_FSDATA_FILE                   "fsdata.c"
-#define LWIP_HTTPD_ABORT_ON_CLOSE_MEM_ERROR 1
-#define LWIP_HTTPD_CUSTOM_FILES             1
-#define LWIP_HTTPD_FILE_STATE               1
-#define LWIP_HTTPD_DYNAMIC_HEADERS          0
-// #define LWIP_HTTPD_DYNAMIC_FILE_READ        1
-#define LWIP_HTTPD_FS_ASYNC_READ            1
 
 // allow override in some examples
 #ifndef NO_SYS
