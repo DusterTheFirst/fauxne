@@ -1,3 +1,4 @@
+#include "chunked_str.h"
 #include "error.h"
 #include "http.h"
 #include "http/parse.h"
@@ -7,13 +8,14 @@
 #include "lwip/tcp.h"
 
 err_t callback_sent(http_conn_state_t *state,
-                  struct tcp_pcb *client_pcb,
-                  u16_t len) {
+                    struct tcp_pcb *client_pcb,
+                    u16_t len) {
     DEBUG("TCP server sent %u bytes", len);
 
     state->response.sent += len;
 
-    if (state->response.sent == state->response.response_text.len) {
+    if (state->response.sent ==
+        chunked_str_total_length(&state->response.data)) {
         TRACE("sent all that needs to be sent, closing connection");
 
         TCP_TRY(tcp_close(client_pcb), "Encountered error trying to close pcb");
@@ -146,14 +148,24 @@ err_t callback_accept(
           ip4_addr3(&client_pcb->remote_ip), ip4_addr4(&client_pcb->remote_ip),
           client_pcb->remote_port);
 
-    static const str_t http_response = str(
+#include "static_files.h"
+
+    (void)static_file_404_html_str;
+    (void)static_file_index_html_str;
+
+    static const str_t headers = str(
         "HTTP/1.1 200 OK\r\n"
-        "Content-Length: 13\r\n"
+        // "Content-Length: 13\r\n"
         "Content-Type: text/html\r\n"
         // "Connection: keep-alive\r\n"
         // "Keep-Alive: timeout=5, max=1000\r\n"
-        "\r\n"
-        "<h1>piss</h1>");
+        "\r\n");
+
+    static chunked_str_t http_response;
+    http_response = chunked_str_new_with_capacity(2);
+
+    chunked_str_push(&http_response, headers);
+    chunked_str_push(&http_response, static_file_index_html_str);
 
     http_conn_state_t *conn_state = malloc(sizeof(http_conn_state_t));
 
@@ -165,7 +177,7 @@ err_t callback_accept(
             .headers = header_map_new(),
         },
         .response = (http_raw_response_t){
-            .response_text = http_response,
+            .data = http_response,
             .sent = 0,
         },
     };

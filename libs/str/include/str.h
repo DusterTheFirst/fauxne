@@ -2,7 +2,6 @@
 
 #include "log.h"
 #include "pico/stdlib.h"
-#include "vector.h"
 #include <string.h>
 
 typedef struct str {
@@ -10,10 +9,10 @@ typedef struct str {
     size_t len;
 } str_t;
 
-#define str(CSTR)            \
-    ((str_t){                \
-        .ptr = CSTR,         \
-        .len = sizeof(CSTR), \
+#define str(CSTR)                \
+    ((str_t){                    \
+        .ptr = CSTR,             \
+        .len = sizeof(CSTR) - 1, \
     })
 
 static inline str_t str_from_raw(const char *ptr, size_t len) {
@@ -44,13 +43,3 @@ static inline str_t str_slice_to_end(str_t *str, size_t start) {
                            " = \"" ANSI_FOREGROUND_WHITE     \
                            "%.*s" ANSI_FOREGROUND_GRAY "\"", \
                            STR.len, STR.ptr);
-
-DEFINE_VECTOR(str_t, chunked_str)
-
-static inline void chunked_str_printf(chunked_str_t *chunked) {
-    for (size_t i = 0; i < chunked->length; i++) {
-        str_t *str = &chunked->buffer[i];
-
-        printf("%.*s", str->len, str->ptr);
-    }
-}

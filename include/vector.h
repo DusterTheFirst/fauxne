@@ -16,6 +16,13 @@
             .length = 0,                                                   \
         });                                                                \
     }                                                                      \
+    static inline NAME##_t NAME##_new_with_capacity(size_t capacity) {     \
+        return ((NAME##_t){                                                \
+            .buffer = malloc(sizeof(TYPE) * capacity),                     \
+            .capacity = capacity,                                          \
+            .length = 0,                                                   \
+        });                                                                \
+    }                                                                      \
                                                                            \
     static inline void NAME##_clear(NAME##_t *vector) {                    \
         free(vector->buffer);                                              \

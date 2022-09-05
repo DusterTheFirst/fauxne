@@ -7,13 +7,15 @@ err_t response_send(http_raw_response_t *response,
 
     TRACE("sending %d remaining bytes", remaining);
 
-    TCP_TRY(
-        tcp_write(
-            client_pcb,
-            response_remaining_data(response),
-            remaining,
-            0),
-        "encountered error writing to tcp connection");
+    for (size_t i = 0; i < response->data.length; i++) {
+        str_t *str = &response->data.buffer[i];
+
+        TRACE("sending %d byte chunk", str->len);
+
+        TCP_TRY(
+            tcp_write(client_pcb, str->ptr, str->len, 0),
+            "encountered error writing to tcp connection");
+    }
 
     TCP_TRY(tcp_output(client_pcb),
             "Encountered error outputting to tcp connection");

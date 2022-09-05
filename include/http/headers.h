@@ -1,6 +1,6 @@
 #pragma once
 
-#include "str.h"
+#include "chunked_str.h"
 #include "vector.h"
 
 typedef struct header_text {

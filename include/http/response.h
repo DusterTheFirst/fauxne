@@ -2,21 +2,15 @@
 
 #include "lwip/tcp.h"
 #include "pico/platform.h"
-#include "str.h"
+#include "chunked_str.h"
 
 typedef struct http_raw_response {
-    str_t response_text;
+    chunked_str_t data;
     size_t sent;
 } http_raw_response_t;
 
 inline static size_t response_remaining_len(http_raw_response_t *transaction) {
-    return transaction->response_text.len - transaction->sent;
-}
-
-inline static void const *response_remaining_data(
-    http_raw_response_t *transaction) {
-    return transaction->response_text.ptr +
-           MIN(transaction->sent, transaction->response_text.len);
+    return chunked_str_total_length(&transaction->data) - transaction->sent;
 }
 
 err_t response_send(http_raw_response_t *response,

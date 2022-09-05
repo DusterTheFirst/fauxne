@@ -43,7 +43,6 @@
           VAR)
 #else
 #define DEBUG(...)
-#define DBG_str(VAR)
 #endif
 
 #if LOG_LEVEL >= LOG_LEVEL_INFO

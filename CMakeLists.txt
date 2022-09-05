@@ -30,8 +30,8 @@ if(TARGET pico_lwip)
 endif()
 
 # DHCP server
-add_library(dhcpserver STATIC deps/dhcpserver/dhcpserver.c)
-target_include_directories(dhcpserver SYSTEM INTERFACE deps/dhcpserver)
+add_library(dhcpserver STATIC libs/vendor/dhcpserver/dhcpserver.c)
+target_include_directories(dhcpserver SYSTEM INTERFACE libs/vendor/dhcpserver)
 target_include_directories(dhcpserver PRIVATE lwip)
 target_link_libraries(dhcpserver
     pico_cyw43_arch_lwip_threadsafe_background
@@ -39,11 +39,39 @@ target_link_libraries(dhcpserver
 
 # HTTP parser
 add_library(llhttp STATIC
-    deps/llhttp/src/llhttp.c
-    deps/llhttp/src/http.c
-    deps/llhttp/src/api.c)
-target_include_directories(llhttp SYSTEM INTERFACE deps/llhttp/include)
-target_include_directories(llhttp PRIVATE deps/llhttp/include)
+    libs/vendor/llhttp/src/llhttp.c
+    libs/vendor/llhttp/src/http.c
+    libs/vendor/llhttp/src/api.c)
+target_include_directories(llhttp SYSTEM INTERFACE libs/vendor/llhttp/include)
+target_include_directories(llhttp PRIVATE libs/vendor/llhttp/include)
+
+# logging facade strings
+add_library(log INTERFACE)
+target_include_directories(log INTERFACE libs/log/include)
+target_link_libraries(log INTERFACE pico_stdlib)
+
+# Rust-style strings
+add_library(str INTERFACE)
+target_include_directories(str INTERFACE libs/str/include)
+target_link_libraries(str INTERFACE log)
+
+# Static files include
+add_library(static_files STATIC)
+target_link_libraries(static_files str)
+
+file(GLOB STATIC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/static_files/*)
+add_custom_command(
+    TARGET static_files
+    PRE_BUILD
+    DEPENDS ${STATIC_FILES}
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/generate_static.sh
+    VERBATIM
+)
+file(GLOB STATIC_GENERATED_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/generated/static_files/*.c)
+target_sources(static_files PRIVATE ${STATIC_GENERATED_SOURCES})
+target_include_directories(static_files
+    INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/generated/static_files/include
+)
 
 # Get all of the c files in the src directory
 file(GLOB SOURCES src/*.c src/*/*.c)
@@ -69,6 +97,9 @@ target_link_libraries(fauxne
     pico_time
     dhcpserver
     llhttp
+    static_files
+    str
+    log
 )
 
 target_compile_definitions(fauxne PRIVATE

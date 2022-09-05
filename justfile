@@ -1,3 +1,5 @@
+#!/usr/bin/env -S just --justfile
+
 PICO_BOOTSEL_MOUNT := "/run/media/dusterthefirst/RPI-RP2/"
 
 
