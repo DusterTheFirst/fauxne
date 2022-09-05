@@ -150,8 +150,8 @@ err_t callback_accept(
 
 #include "static_files.h"
 
-    (void)static_file_404_html_str;
-    (void)static_file_index_html_str;
+    (void)static_file_404_html;
+    (void)static_file_event_js;
 
     static const str_t headers = str(
         "HTTP/1.1 200 OK\r\n"
@@ -165,7 +165,7 @@ err_t callback_accept(
     http_response = chunked_str_new_with_capacity(2);
 
     chunked_str_push(&http_response, headers);
-    chunked_str_push(&http_response, static_file_index_html_str);
+    chunked_str_push(&http_response, static_file_index_html);
 
     http_conn_state_t *conn_state = malloc(sizeof(http_conn_state_t));
 

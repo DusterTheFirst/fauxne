@@ -60,15 +60,12 @@ add_library(static_files STATIC)
 target_link_libraries(static_files str)
 
 file(GLOB STATIC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/static_files/*)
-add_custom_command(
-    TARGET static_files
-    PRE_BUILD
-    DEPENDS ${STATIC_FILES}
+add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/generated/static_files/static_files.c
+    DEPENDS ${STATIC_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/generate_static.sh
     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/generate_static.sh
     VERBATIM
 )
-file(GLOB STATIC_GENERATED_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/generated/static_files/*.c)
-target_sources(static_files PRIVATE ${STATIC_GENERATED_SOURCES})
+target_sources(static_files PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated/static_files/static_files.c)
 target_include_directories(static_files
     INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/generated/static_files/include
 )
