@@ -47,7 +47,7 @@ err_t http_server_init(ip4_addr_t *ip,
     TRACE("tcp server listening");
 
     tcp_arg(server->server_pcb, server);
-    tcp_accept(server->server_pcb, (tcp_accept_fn)server_accept);
+    tcp_accept(server->server_pcb, (tcp_accept_fn)callback_accept);
 
     TRACE("tcp server setup");
 
