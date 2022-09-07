@@ -151,7 +151,7 @@ err_t callback_accept(
 #include "static_files.h"
 
     (void)static_file_404_html;
-    (void)static_file_event_js;
+    (void)static_file_scripts__event_js;
 
     static const str_t headers = str(
         "HTTP/1.1 200 OK\r\n"
