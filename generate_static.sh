@@ -2,14 +2,15 @@
 
 set -euo pipefail
 
-BASEDIR=$(dirname "$0")
+BASEDIR=$(realpath $(dirname "$0"))
 
 static_dir="$BASEDIR/static_files"
 static_out_dir="$BASEDIR/build/generated/static_files"
-static_out_c="$static_out_dir/static_files.c"
 
-static_out_include="$static_out_dir/include"
-static_out_header="$static_out_include/static_files.h"
+static_out_c="$static_out_dir/static_files.c"
+static_out_header="$static_out_dir/include/static_files.h"
+
+static_out_hex_dir="$static_out_dir/hex"
 
 autogenerate_header="
 // ---------------------------------------
@@ -19,14 +20,18 @@ autogenerate_header="
 #include \"str.h\"
 ";
 
-mkdir --parents $static_out_include
+mkdir --parents $(dirname $static_out_header)
 echo -e "#pragma once\n$autogenerate_header" > $static_out_header
 echo "$autogenerate_header" > $static_out_c
 
-for file in $(ls $static_dir); do
-    variable_name=$(echo "static_file_$file" | sed s/\\./_/g -)
-    in_file="$static_dir/$file" 
-    out_file_hex="$static_out_dir/$file.hex"
+pushd $static_dir
+
+for file in $(find . -type f -printf '%P\n'); do
+    variable_name=$(echo "static_file_$file" | sed -e s/\\./_/g -e s/\\//__/g -)
+    in_file="$file" 
+    out_file_hex=$(realpath -m "$static_out_hex_dir/$file.hex")
+
+    mkdir --parents $(dirname $out_file_hex)
     
     xxd -p "$in_file" "$out_file_hex"
     echo "const static uint8_t ${variable_name}_buf[] = {" >> $static_out_c
@@ -39,3 +44,5 @@ const str_t ${variable_name} = {
 
     echo "extern const str_t ${variable_name};" >> $static_out_header
 done
+
+popd

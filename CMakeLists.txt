@@ -56,16 +56,16 @@ target_include_directories(str INTERFACE libs/str/include)
 target_link_libraries(str INTERFACE log)
 
 # Static files include
-add_library(static_files STATIC)
-target_link_libraries(static_files str)
-
 file(GLOB STATIC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/static_files/*)
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/generated/static_files/static_files.c
     DEPENDS ${STATIC_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/generate_static.sh
     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/generate_static.sh
     VERBATIM
 )
-target_sources(static_files PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated/static_files/static_files.c)
+
+add_library(static_files STATIC ${CMAKE_CURRENT_BINARY_DIR}/generated/static_files/static_files.c)
+target_link_libraries(static_files str)
+
 target_include_directories(static_files
     INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/generated/static_files/include
 )
