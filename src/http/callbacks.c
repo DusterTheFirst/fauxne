@@ -151,7 +151,14 @@ err_t callback_accept(
 #include "static_files.h"
 
     (void)static_file_404_html;
-    (void)static_file_scripts__event_js;
+    (void)static_file_js__event_js;
+    (void)static_file_js__index_js;
+
+    // static const str_t event_stream = str(
+    //     "HTTP/1.1 200 OK\r\n"
+    //     "Content-Type: text/event-stream\r\n"
+    //     "\r\n"
+    //     ": welcome\n");
 
     static const str_t headers = str(
         "HTTP/1.1 200 OK\r\n"
