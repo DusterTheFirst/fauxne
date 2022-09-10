@@ -10,10 +10,15 @@ err_t response_send(http_raw_response_t *response,
     for (size_t i = 0; i < response->data.length; i++) {
         str_t *str = &response->data.buffer[i];
 
-        TRACE("sending %d byte chunk", str->len);
+        DBG("%d", tcp_sndbuf(client_pcb));
 
+        size_t len = MIN(str->len, tcp_sndbuf(client_pcb));
+
+        TRACE("sending %d bytes of a %d byte chunk", len, str->len);
+
+        // FIXME: only send tcp_sndbuf(client_pcb) max
         TCP_TRY(
-            tcp_write(client_pcb, str->ptr, str->len, 0),
+            tcp_write(client_pcb, str->ptr, len, 0),
             "encountered error writing to tcp connection");
     }
 

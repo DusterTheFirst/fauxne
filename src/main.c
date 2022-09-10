@@ -41,12 +41,13 @@ int main(void) {
     // multicore_launch_core1(main1);
 
     // Wait for usb connection if it is the only configured STDIO output
-#if LIB_PICO_STDIO_USB && !LIB_PICO_STDIO_UART && !LIB_PICO_STDIO_SEMIHOSTING
+#if WAIT_FOR_USB_CDC
     while (!tud_cdc_connected()) {
         sleep_ms(100);
     }
     TRACE("USB CDC Connected, starting boot process");
 #endif
+    printf(ANSI_SGR_RESET ANSI_CURSOR_RESET ANSI_CLEAR_SCREEN);
 
     TRACE("TRACE");
     DEBUG("DEBUG");

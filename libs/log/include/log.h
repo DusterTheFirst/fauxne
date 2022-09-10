@@ -16,7 +16,7 @@ static inline void log_preamble(const char *const file,
 
     printf(ANSI_FOREGROUND_WHITE
            "%.02ld:%.02ld.%.03ld " ANSI_FOREGROUND_GRAY "%s:%d"
-           " [" ANSI_RESET "%s" ANSI_FOREGROUND_GRAY
+           " [" ANSI_SGR_RESET "%s" ANSI_FOREGROUND_GRAY
            "] " ANSI_FOREGROUND_BRIGHT_WHITE,
            whole_min, whole_sec, whole_ms,
            file, line, level);

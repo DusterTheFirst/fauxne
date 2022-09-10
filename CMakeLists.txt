@@ -81,7 +81,7 @@ target_include_directories(fauxne PRIVATE
     lwip
 )
 
-pico_enable_stdio_uart(fauxne 0)
+pico_enable_stdio_uart(fauxne 1)
 pico_enable_stdio_usb(fauxne 1)
 
 pico_add_extra_outputs(fauxne)
@@ -101,9 +101,12 @@ target_link_libraries(fauxne
 
 target_compile_definitions(fauxne PRIVATE
 
-    # PICO_STDIO_ENABLE_CRLF_SUPPORT=0
+    # PICO_STDIO_ENABLE_CRLF_SUPPORT=1
     LOG_LEVEL=LOG_LEVEL_TRACE
     PICO_STDIO_USB_STDOUT_TIMEOUT_US=2000000000
+    PICO_DEFAULT_UART_BAUD_RATE=9600
+
+    WAIT_FOR_USB_CDC=1
 
     # PICO_PANIC_FUNCTION=pico_panic
 )
