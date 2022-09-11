@@ -5,7 +5,7 @@ set -euo pipefail
 BASEDIR=$(realpath $(dirname "$0"))
 
 static_dir="$BASEDIR/static_files"
-static_out_dir="$BASEDIR/build/generated/static_files"
+static_out_dir="$BASEDIR/libs/static_files"
 
 static_out_c="$static_out_dir/static_files.c"
 static_out_header="$static_out_dir/include/static_files.h"

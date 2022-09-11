@@ -1,4 +1,5 @@
 #include "http.h"
+#include "chunked_str.h"
 #include "error.h"
 #include "http/callbacks.h"
 #include "http/request.h"
@@ -67,4 +68,50 @@ err_t http_server_close(http_server_t *server) {
     free(server);
 
     return tcp_close_err;
+}
+
+chunked_str_t http_server_respond(http_raw_request_t *request) {
+#include "static_files.h"
+
+    (void)static_file_js__event_js;
+    (void)static_file_js__index_js;
+
+    // static const str_t event_stream = str(
+    //     "HTTP/1.1 200 OK\r\n"
+    //     "Content-Type: text/event-stream\r\n"
+    //     "\r\n"
+    //     ": welcome\n");
+
+#define HTTP_OK "HTTP/1.1 200 OK\r\n"
+#define HTTP_NOT_FOUND "HTTP/1.1 404 Not Found\r\n"
+
+    // TODO: save on requests, bundle html with trunkrs.dev
+#define CONTENT_TYPE_HTML "Content-Type: text/html\r\n"
+#define CONTENT_TYPE_CSS "Content-Type: text/css\r\n"
+#define CONTENT_TYPE_JS "Content-Type: text/javascript\r\n"
+#define CONTENT_TYPE_EVENT_STREAM "Content-Type: text/event-stream\r\n"
+
+#define HTTP_BODY_SEPARATOR "\r\n"
+
+    if (chunked_str_eq(&request->url, str("/"))) {
+        DEBUG("INDEX");
+
+        chunked_str_t http_response = chunked_str_new_with_capacity(2);
+        chunked_str_push(&http_response,
+                         str(HTTP_OK CONTENT_TYPE_HTML
+                                 HTTP_BODY_SEPARATOR));
+        chunked_str_push(&http_response, static_file_index_html);
+
+        return http_response;
+    } else {
+        DEBUG("404");
+
+        chunked_str_t http_response = chunked_str_new_with_capacity(2);
+        chunked_str_push(&http_response,
+                         str(HTTP_NOT_FOUND CONTENT_TYPE_HTML
+                                 HTTP_BODY_SEPARATOR));
+        chunked_str_push(&http_response, static_file_404_html);
+
+        return http_response;
+    }
 }

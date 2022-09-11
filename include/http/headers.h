@@ -36,16 +36,20 @@ static inline void header_map_debug(header_map_t *map) {
     for (size_t header = 0; header < map->length; header += 1) {
         header_name_value_t *name_value = &map->buffer[header];
 
+        DEBUG_PREAMBLE;
         chunked_str_printf(&name_value->header_name.text);
         printf(":\n");
 
         header_text_vector_t *header_values = &name_value->header_values;
         for (size_t value = 0; value < header_values->length; value += 1) {
+            DEBUG_PREAMBLE;
             printf("    - \"");
             chunked_str_printf(&header_values->buffer[value].text);
             printf("\"\n");
         }
+        DEBUG_PREAMBLE;
         putchar('\n');
     }
+    DEBUG_PREAMBLE;
     printf("] header_map\n");
 }

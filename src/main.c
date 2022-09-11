@@ -45,7 +45,6 @@ int main(void) {
     while (!tud_cdc_connected()) {
         sleep_ms(100);
     }
-    TRACE("USB CDC Connected, starting boot process");
 #endif
     printf(ANSI_SGR_RESET ANSI_CURSOR_RESET ANSI_CLEAR_SCREEN);
 
@@ -102,12 +101,21 @@ int main(void) {
     TRACE("HTTP server started");
 
     while (true) {
-        sleep_ms(1000);
-        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
-        sleep_ms(1000);
-        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
+        static absolute_time_t led_time;
+        static int led_on = true;
+
+        // Invert the led
+        if (absolute_time_diff_us(get_absolute_time(), led_time) < 0) {
+            led_on = !led_on;
+            cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, led_on);
+            led_time = make_timeout_time_ms(1000);
+        }
+
+        cyw43_arch_poll();
+        sleep_ms(1);
     }
 
+    TCP_TRY(http_server_close(&server), "http server failed to close");
     dhcp_server_deinit(&dhcp_server);
     cyw43_arch_deinit();
 

@@ -11,8 +11,12 @@ typedef struct http_server {
 } http_server_t;
 
 err_t http_server_init(ip4_addr_t *ip, uint16_t port,
-                       http_server_t *server);
-err_t http_server_close(http_server_t *server);
+                       http_server_t *server)
+    __result_use_check;
+err_t http_server_close(http_server_t *server)
+    __result_use_check;
+chunked_str_t http_server_respond(http_raw_request_t *request)
+    __result_use_check;
 
 inline static ip4_addr_t const *http_server_local_ip(http_server_t *server) {
     return &server->server_pcb->local_ip;

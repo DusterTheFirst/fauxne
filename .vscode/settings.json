@@ -14,6 +14,9 @@
             "visibility": "hidden"
         }
     },
+
+    "cmake.buildBeforeRun": true,
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "cSpell.words": [
         "ABRT",
         "DHCPS",
@@ -24,13 +27,7 @@
     ],
     "git.autoRepositoryDetection": false,
     "files.associations": {
-        "*.sxcu": "json",
-        "**/.cargo/config": "toml",
-        "*.pio": "platformio-debug.asm",
-        "*.njk": "nunjucks",
         "*.h": "c",
         "*.c": "c",
-        "string_view": "c",
-        "system_error": "c"
     }
 }

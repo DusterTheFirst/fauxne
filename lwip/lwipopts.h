@@ -70,8 +70,8 @@
 #define IP_DEBUG                    LWIP_DBG_OFF
 #define IP_REASS_DEBUG              LWIP_DBG_OFF
 #define RAW_DEBUG                   LWIP_DBG_OFF
-#define MEM_DEBUG                   LWIP_DBG_OFF
-#define MEMP_DEBUG                  LWIP_DBG_OFF
+#define MEM_DEBUG                   LWIP_DBG_ON
+#define MEMP_DEBUG                  LWIP_DBG_ON
 #define SYS_DEBUG                   LWIP_DBG_OFF
 #define TCP_DEBUG                   LWIP_DBG_OFF
 #define TCP_INPUT_DEBUG             LWIP_DBG_OFF

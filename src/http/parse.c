@@ -22,10 +22,7 @@ static int on_url_complete(llhttp_t *parser) {
 static int on_header_field(llhttp_t *parser, const char *at, size_t length) {
     http_raw_request_t *request = request_for_parser(parser);
 
-    TRACE("on_header_field");
-
     str_t header_field = str_from_raw(at, length);
-    DBG_str(header_field);
 
     header_name_value_t *header_name_value = header_map_last(&request->headers);
     if (header_name_value == NULL ||
@@ -44,8 +41,6 @@ static int on_header_field(llhttp_t *parser, const char *at, size_t length) {
 int on_header_field_complete(llhttp_t *parser) {
     http_raw_request_t *request = request_for_parser(parser);
 
-    TRACE("on_header_field_complete");
-
     header_name_value_t *header_name_value = header_map_last(&request->headers);
     if (header_name_value == NULL) {
         return ERR_ABRT;
@@ -62,10 +57,7 @@ int on_header_field_complete(llhttp_t *parser) {
 static int on_header_value(llhttp_t *parser, const char *at, size_t length) {
     http_raw_request_t *request = request_for_parser(parser);
 
-    TRACE("on_header_value");
-
     str_t header_value = str_from_raw(at, length);
-    DBG_str(header_value);
 
     header_name_value_t *header_name_value = header_map_last(&request->headers);
     if (header_name_value == NULL) {
@@ -88,8 +80,6 @@ static int on_header_value(llhttp_t *parser, const char *at, size_t length) {
 
 int on_header_value_complete(llhttp_t *parser) {
     http_raw_request_t *request = request_for_parser(parser);
-
-    TRACE("on_header_value_complete");
 
     header_name_value_t *header_name_value = header_map_last(&request->headers);
     if (header_name_value == NULL) {
@@ -114,8 +104,6 @@ int on_header_value_complete(llhttp_t *parser) {
 
 int on_headers_complete(llhttp_t *parser) {
     http_raw_request_t *request = request_for_parser(parser);
-
-    TRACE("on_headers_complete");
 
     // Shrink vector to consume just the amount needed
     header_map_shrink_to_fit(&request->headers);

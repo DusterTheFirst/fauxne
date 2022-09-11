@@ -34,7 +34,7 @@ add_library(dhcpserver STATIC libs/vendor/dhcpserver/dhcpserver.c)
 target_include_directories(dhcpserver SYSTEM INTERFACE libs/vendor/dhcpserver)
 target_include_directories(dhcpserver PRIVATE lwip)
 target_link_libraries(dhcpserver
-    pico_cyw43_arch_lwip_threadsafe_background
+    pico_cyw43_arch_lwip_poll
 )
 
 # HTTP parser
@@ -57,17 +57,17 @@ target_link_libraries(str INTERFACE log)
 
 # Static files include
 file(GLOB STATIC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/static_files/*)
-add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/generated/static_files/static_files.c
+add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/libs/static_files/static_files.c
     DEPENDS ${STATIC_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/generate_static.sh
     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/generate_static.sh
     VERBATIM
 )
 
-add_library(static_files STATIC ${CMAKE_CURRENT_BINARY_DIR}/generated/static_files/static_files.c)
+add_library(static_files STATIC ${CMAKE_CURRENT_SOURCE_DIR}/libs/static_files/static_files.c)
 target_link_libraries(static_files str)
 
 target_include_directories(static_files
-    INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/generated/static_files/include
+    INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/libs/static_files/include
 )
 
 # Get all of the c files in the src directory
@@ -88,7 +88,7 @@ pico_add_extra_outputs(fauxne)
 
 target_link_libraries(fauxne
     hardware_interp
-    pico_cyw43_arch_lwip_threadsafe_background
+    pico_cyw43_arch_lwip_poll
     pico_stdlib
     pico_multicore
     pico_time
@@ -101,14 +101,15 @@ target_link_libraries(fauxne
 
 target_compile_definitions(fauxne PRIVATE
 
-    # PICO_STDIO_ENABLE_CRLF_SUPPORT=1
     LOG_LEVEL=LOG_LEVEL_TRACE
     PICO_STDIO_USB_STDOUT_TIMEOUT_US=2000000000
-    PICO_DEFAULT_UART_BAUD_RATE=9600
+    PICO_DEFAULT_UART_BAUD_RATE=115200
 
     WAIT_FOR_USB_CDC=1
 
     # PICO_PANIC_FUNCTION=pico_panic
+    # PICO_DEBUG_MALLOC=0
+    # PICO_STDIO_ENABLE_CRLF_SUPPORT=0
 )
 
 target_compile_options(fauxne PRIVATE
