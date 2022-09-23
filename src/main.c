@@ -6,7 +6,6 @@
 #include "pico/cyw43_arch.h"
 #include "pico/multicore.h"
 #include "pico/stdlib.h"
-#include "tusb.h"
 #include <stdio.h>
 
 #include "lwip/pbuf.h"
@@ -40,12 +39,6 @@ int main(void) {
 
     // multicore_launch_core1(main1);
 
-    // Wait for usb connection if it is the only configured STDIO output
-#if WAIT_FOR_USB_CDC
-    while (!tud_cdc_connected()) {
-        sleep_ms(100);
-    }
-#endif
     printf(ANSI_SGR_RESET ANSI_CURSOR_RESET ANSI_CLEAR_SCREEN);
 
     TRACE("TRACE");

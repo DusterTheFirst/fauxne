@@ -8,7 +8,7 @@
 #include "lwip/tcp.h"
 
 err_t callback_sent(http_conn_state_t *state,
-                    __unused struct tcp_pcb *client_pcb,
+                    struct tcp_pcb *client_pcb,
                     u16_t len) {
     DEBUG("TCP server sent %u bytes", len);
 
@@ -66,6 +66,8 @@ err_t callback_receive(http_conn_state_t *state,
 
     if (pbuf == NULL) {
         INFO("connection closed");
+
+        finish_http(state, client_pcb);
 
         tcp_close(client_pcb);
         pbuf_free(state->request.packets);

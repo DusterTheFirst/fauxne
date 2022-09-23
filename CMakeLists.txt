@@ -105,7 +105,8 @@ target_compile_definitions(fauxne PRIVATE
     PICO_STDIO_USB_STDOUT_TIMEOUT_US=2000000000
     PICO_DEFAULT_UART_BAUD_RATE=115200
 
-    WAIT_FOR_USB_CDC=1
+    # Make USB wait for connection before transmitting
+    PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS=0
 
     # PICO_PANIC_FUNCTION=pico_panic
     # PICO_DEBUG_MALLOC=0
