@@ -1,7 +1,12 @@
-import src.web_server as web_server
+from src import core1, core0
 import uasyncio as asyncio
+import _thread as thread
 
-try:
-    asyncio.run(web_server.main())
-finally:
-    asyncio.new_event_loop()
+flags: list[asyncio.ThreadSafeFlag] = []
+
+# Start
+thread.start_new_thread(core1.main, (flags,))
+
+# loop: asyncio.Loop = asyncio.new_event_loop()
+
+asyncio.run(core0.main())

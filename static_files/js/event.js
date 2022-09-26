@@ -47,6 +47,7 @@ export function events_subscribe(source = "/api/events") {
         } catch (e) {
             console.warn("non-json data received");
             data = event.data;
+            document.body.append(event.data)
         }
         console.dir(data);
         console.dir(event.lastEventId);

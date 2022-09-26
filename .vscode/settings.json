@@ -5,7 +5,8 @@
     "python.analysis.typeCheckingMode": "basic",
     "python.analysis.extraPaths": [".vscode/Pico-W-Stub/stubs"],
     "picowgo.syncFolder": "src",
-    "picowgo.openOnStart": true,
+    "picowgo.openOnStart": false,
+    "picowgo.autoConnect": false,
     "cSpell.words": [
         "fauxne",
         "wlan"
