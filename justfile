@@ -11,6 +11,9 @@ upload: build
 wipe:
     mpremote run helpers/wipe.py
 
+mpy:
+    mpremote run helpers/mpy.py
+
 connect:
     mpremote
 
@@ -24,7 +27,7 @@ build:
         outfile="build/$(echo $file | sed s/\.py/\.mpy/)"
         mkdir -p $(dirname $outfile)
         echo "Compiling $file"
-        mpy-cross -o $outfile -O9 -v $file
+        mpy-cross -o $outfile -O9 -march=armv6m -v $file
     done
 
 clean:
