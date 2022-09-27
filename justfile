@@ -1,26 +1,20 @@
-list:
+alias help := _list
+
+# (default) list the avaliable recipes
+_list:
     @just --list --unsorted --justfile {{justfile()}}
 
-run opt="0": (upload opt)
+# build, upload, and run the code with optimization level opt (default = 0)
+run opt = "0": (upload opt)
     mpremote run main.py
 
-upload opt: (build opt)
+# build and upload the code with optimization level opt (default = 0)
+upload opt = "0": (build opt)
     mpremote fs cp -r static_files :
     cd build && mpremote fs cp -r . :
 
-wipe:
-    mpremote run helpers/wipe.py
-
-mpy:
-    mpremote run helpers/mpy.py
-
-connect:
-    mpremote
-
-reset:
-    mpremote soft-reset
-
-build opt:
+# build the code with optimization level opt (default = 0)
+build opt = "0":
     #!/usr/bin/env sh
     mkdir -p build
     for file in `find src -type f -name "*.py"`; do
@@ -30,6 +24,7 @@ build opt:
         mpy-cross -o $outfile -O{{ opt }} -march=armv6m -v $file
     done
 
+# clean the local build files
 clean:
     #!/usr/bin/env sh
     if [ -e build ]; then
@@ -39,3 +34,18 @@ clean:
         echo "nothing to clean"
     fi
 
+# wipe the attached pico
+wipe:
+    mpremote run helpers/wipe.py
+
+# get information about the attached pico's mpy version
+mpy:
+    mpremote run helpers/mpy.py
+
+# connect to the attached pico
+connect:
+    mpremote
+
+# soft-reset the attached pico
+reset:
+    mpremote soft-reset
