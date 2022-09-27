@@ -1,10 +1,10 @@
 list:
     @just --list --unsorted --justfile {{justfile()}}
 
-run: upload build
+run opt="0": (upload opt)
     mpremote run main.py
 
-upload: build
+upload opt: (build opt)
     mpremote fs cp -r static_files :
     cd build && mpremote fs cp -r . :
 
@@ -20,14 +20,14 @@ connect:
 reset:
     mpremote soft-reset
 
-build:
+build opt:
     #!/usr/bin/env sh
     mkdir -p build
     for file in `find src -type f -name "*.py"`; do
         outfile="build/$(echo $file | sed s/\.py/\.mpy/)"
         mkdir -p $(dirname $outfile)
         echo "Compiling $file"
-        mpy-cross -o $outfile -O9 -march=armv6m -v $file
+        mpy-cross -o $outfile -O{{ opt }} -march=armv6m -v $file
     done
 
 clean:
