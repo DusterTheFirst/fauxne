@@ -1,20 +1,21 @@
+import src.broadcast.channel as broadcast_channel
+import src.events as events
 import uasyncio as asyncio
 
-async def serve_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
-    print("Client connected")
+async def serve_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter, channel: broadcast_channel.BroadcastChannel) -> None:
+    print(reader.get_extra_info("peername"), "Client connected")
 
     request_line: bytes = await reader.readline()
-    request: str = request_line.decode("utf-8")
+    request: str = request_line.decode("utf-8").strip()
 
     # We are not interested in HTTP request headers, skip them
     while await reader.readline() != b"\r\n":
         pass
 
-    print(request)
     [method, url, http] = request.split(" ", 3)
-    print("method", method)
-    print("url", url)
-    print("http", http)
+    print(reader.get_extra_info("peername"), "method", method)
+    print(reader.get_extra_info("peername"), "url", url)
+    print(reader.get_extra_info("peername"), "http", http)
 
     if method == "GET":
         if url == "/index.html" or url == "/":
@@ -24,22 +25,15 @@ async def serve_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrite
         elif url == "/js/event.js":
             await send_static(writer, "text/javascript", "js/event.js")
         elif url == "/api/events":
-            await handle_events(writer)
+            writer.write(http_response("text/event-stream"))
+            await writer.drain()
+            await events.handle_events(writer, channel.create_receiver())
         else:
             await send_static(writer, "text/html", "404.html", status=(404, "Not Found"))
     else:
         await send_static(writer, "text/html", "405.html", status=(405, "Method Not Allowed"))
 
-    print("Client disconnected")
-
-async def handle_events(writer: asyncio.StreamWriter):
-    writer.write(http_response("text/event-stream"))
-
-    while True:
-        writer.write("data: piss\n\n")
-        await writer.drain()
-        print("piss", writer.get_extra_info("peername"))
-        await asyncio.sleep(5)
+    print(reader.get_extra_info("peername"), method, url, "Client disconnected")
 
 def http_response(content_type: str, status: tuple[int, str] = (200, "OK")):
     return f"HTTP/1.0 {status[0]} {status[1]}\r\nContent-type: {content_type}\r\n\r\n"

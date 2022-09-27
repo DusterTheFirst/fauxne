@@ -1,17 +1,17 @@
-
-from machine import Pin, Timer
-from src.access_point import AccessPoint
-from src.web_server import serve_client
+import machine
+import src.broadcast.channel as broadcast_channel
+import src.access_point as access_point
+import src.web_server as web_server
 import uasyncio as asyncio
 
-onboard = Pin("LED", Pin.OUT)
+onboard = machine.Pin("LED", machine.Pin.OUT)
 
-async def main():
+async def main(channel: broadcast_channel.BroadcastChannel):
     print('Setting up Access Point...')
-    AccessPoint().setup()
+    access_point.AccessPoint().setup()
 
     print('Setting up web server...')
-    asyncio.create_task(asyncio.start_server(serve_client, "0.0.0.0", 80))
+    asyncio.create_task(asyncio.start_server(lambda reader, writer: web_server.serve_client(reader, writer, channel), "0.0.0.0", 80))
     
     while True:
         onboard.on()
